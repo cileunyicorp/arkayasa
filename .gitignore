@@ -1,4 +1,13 @@
+# Dependensi
 /node_modules/
-/assets/css/output.css
 /vendor/
-/config/config.php
+
+# Environment & Konfigurasi Sensitif
+.env
+
+# Build CSS / Output
+/assets/css/output.css
+
+# Log atau Cache Lokal (jika ada)
+/logs/
+/tmp/
