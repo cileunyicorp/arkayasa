@@ -1,0 +1,30 @@
+name: Deploy to InfinityFree
+
+on:
+  push:
+    branches:
+      - main # Sesuaikan jika branch utama kamu 'master'
+
+jobs:
+  web-deploy:
+    name: SFTP/FTP Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest code
+        uses: actions/checkout@v3
+
+      - name: 🚀 Sync files via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.FTP_TARGET_FOLDER }}
+
+          # Mengabaikan file yang tidak perlu di-upload ke server hosting
+          exclude: |
+            **/.git/**
+            **/node_modules/**
+            **/vendor/**
+            **/assets/css/output.css
+            .env
