@@ -1,0 +1,10 @@
+Options -Indexes -MultiViews
+DirectorySlash Off
+RewriteEngine On
+
+# Jika file fisik benar-benar ada (seperti .css, .js, .png), langsung tampilkan filenya
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Sisanya (termasuk URL yang namanya sama dengan folder fisik seperti /admin), arahkan ke index.php
+RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
