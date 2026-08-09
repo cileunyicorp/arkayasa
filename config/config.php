@@ -14,6 +14,7 @@ if (file_exists(__DIR__ . '/.env')) {
     }
 }
 
+
 // Helper function untuk ambil env
 function env($key, $default = null) {
     return $_ENV[$key] ?? $default;
