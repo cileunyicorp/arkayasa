@@ -80,10 +80,10 @@ class AdminCarController
             $category_id = (int)($_POST['category_id'] ?? 0);
 
             // Harga Baru
-            $price_per_day = (float)($_POST['price_per_day'] ?? 0);
-            $price_per_weekend = (float)($_POST['price_per_weekend'] ?? 0);
-            $price_per_week = (float)($_POST['price_per_week'] ?? 0);
-            $price_per_month = (float)($_POST['price_per_month'] ?? 0);
+            $price_per_day     = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_day'] ?? '0');
+            $price_per_weekend = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_weekend'] ?? '0');
+            $price_per_week    = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_week'] ?? '0');
+            $price_per_month   = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_month'] ?? '0');
 
             $year = (int)($_POST['year'] ?? date('Y'));
             $capacity = (int)($_POST['capacity'] ?? 4);
@@ -123,10 +123,10 @@ class AdminCarController
             $category_id = (int)($_POST['category_id'] ?? 0);
 
             // Harga Baru
-            $price_per_day = (float)($_POST['price_per_day'] ?? 0);
-            $price_per_weekend = (float)($_POST['price_per_weekend'] ?? 0);
-            $price_per_week = (float)($_POST['price_per_week'] ?? 0);
-            $price_per_month = (float)($_POST['price_per_month'] ?? 0);
+            $price_per_day     = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_day'] ?? '0');
+            $price_per_weekend = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_weekend'] ?? '0');
+            $price_per_week    = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_week'] ?? '0');
+            $price_per_month   = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_month'] ?? '0');
 
             $year = (int)($_POST['year'] ?? date('Y'));
             $capacity = (int)($_POST['capacity'] ?? 4);

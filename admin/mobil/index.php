@@ -189,7 +189,40 @@ require_once __DIR__ . '/../includes/navbar.php';
         document.getElementById('modal-car').classList.add('hidden');
     }
 
-    // Fetch API Data Edit
+    // Helper Format Angka ke Rupiah yang Aman dari Desimal DB (.00)
+    function formatRupiahNumber(val) {
+        if (val === null || val === undefined || val === '') return '';
+
+        let valStr = val.toString().trim();
+
+        // Jika data berasal dari DB MySQL bertipe decimal (contoh: "500000.00")
+        if (valStr.includes('.') && !valStr.includes(',')) {
+            let parts = valStr.split('.');
+            // Jika dibelakang titik ada 1 atau 2 digit angka desimal (sen)
+            if (parts.length === 2 && parts[1].length <= 2) {
+                valStr = parts[0]; // Ambil angka utamanya saja ("500000")
+            }
+        }
+
+        let cleanVal = valStr.replace(/[^0-9]/g, '');
+        return cleanVal ? new Intl.NumberFormat('id-ID').format(cleanVal) : '';
+    }
+
+    // Listener Event 'input' untuk semua elemen .input-rupiah secara real-time
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('input-rupiah')) {
+            let cursorPosition = e.target.selectionStart;
+            let originalLength = e.target.value.length;
+
+            e.target.value = formatRupiahNumber(e.target.value);
+
+            let newLength = e.target.value.length;
+            cursorPosition = cursorPosition + (newLength - originalLength);
+            e.target.setSelectionRange(cursorPosition, cursorPosition);
+        }
+    });
+
+    // Update Fungsi editCar() dengan Konversi Math.round untuk Keamanan Ekstra
     async function editCar(id) {
         const res = await fetch(`<?= base_url('admin/mobil/api/get_by_id/') ?>${id}`);
         const result = await res.json();
@@ -198,19 +231,17 @@ require_once __DIR__ . '/../includes/navbar.php';
             const data = result.data;
             document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-pen-to-square text-primary mr-2"></i> Edit Data Mobil';
 
-            // Map JSON response ke form
             document.getElementById('car-id').value = data.id;
             document.getElementById('name').value = data.name;
             document.getElementById('brand').value = data.brand;
             document.getElementById('category_id').value = data.category_id;
 
-            // Harga
-            document.getElementById('price_per_day').value = data.price_per_day;
-            document.getElementById('price_per_weekend').value = data.price_per_weekend;
-            document.getElementById('price_per_week').value = data.price_per_week;
-            document.getElementById('price_per_month').value = data.price_per_month;
+            // Konversi nilai desimal DB ke integer murni sebelum diformat
+            document.getElementById('price_per_day').value = formatRupiahNumber(Math.round(parseFloat(data.price_per_day || 0)));
+            document.getElementById('price_per_weekend').value = formatRupiahNumber(Math.round(parseFloat(data.price_per_weekend || 0)));
+            document.getElementById('price_per_week').value = formatRupiahNumber(Math.round(parseFloat(data.price_per_week || 0)));
+            document.getElementById('price_per_month').value = formatRupiahNumber(Math.round(parseFloat(data.price_per_month || 0)));
 
-            // Spesifikasi
             document.getElementById('plate_number').value = data.plate_number;
             document.getElementById('year').value = data.year;
             document.getElementById('capacity').value = data.capacity;
@@ -220,14 +251,12 @@ require_once __DIR__ . '/../includes/navbar.php';
             document.getElementById('features').value = data.features;
             document.getElementById('description').value = data.description;
 
-            // Foto opsional saat edit
             document.getElementById('input-images').removeAttribute('required');
             document.getElementById('img-hint-edit').classList.remove('hidden');
 
             document.getElementById('modal-car').classList.remove('hidden');
         }
     }
-
 
     // Hapus via Fetch API
     function deleteCar(id) {
