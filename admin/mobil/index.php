@@ -6,14 +6,13 @@ require_once __DIR__ . '/../includes/sidebar.php';
 require_once __DIR__ . '/../includes/navbar.php';
 ?>
 
-
 <div class="space-y-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Master Data Armada</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">Kelola spesifikasi kendaraan dan harga sewa harian.</p>
         </div>
-        <button type="button" onclick="openModalCar('add')" class=" inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 transition-all duration-200 whitespace-nowrap">
+        <button type="button" onclick="openModalCar('add')" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 transition-all duration-200 whitespace-nowrap">
             <i class="fa-solid fa-plus"></i><span>Tambah Armada</span>
         </button>
     </div>
@@ -117,18 +116,6 @@ require_once __DIR__ . '/../includes/navbar.php';
                 },
                 {
                     data: null,
-                    render: row => `<span class="font-semibold text-slate-700 dark:text-slate-200">${formatRupiah(row.price_per_week)}</span>`
-                },
-                {
-                    data: null,
-                    render: row => `<span class="font-semibold text-slate-700 dark:text-slate-200">${formatRupiah(row.price_per_month)}</span>`
-                },
-                {
-                    data: null,
-                    render: row => `<span class="font-semibold text-slate-700 dark:text-slate-200">${formatRupiah(row.price_per_weekend)}</span>`
-                },
-                {
-                    data: null,
                     render: row => `<span class="text-xs text-slate-600 dark:text-slate-400">${row.fuel_type} • ${row.transmission}<br>${row.year} • ${row.capacity} Kursi</span>`
                 },
                 {
@@ -151,21 +138,17 @@ require_once __DIR__ . '/../includes/navbar.php';
             language: {
                 lengthMenu: "Tampilkan _MENU_ data",
                 search: "Cari:",
-
                 info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
                 infoEmpty: "Tidak ada data",
                 infoFiltered: "(difilter dari _MAX_ data)",
-
                 zeroRecords: "Data armada tidak ditemukan",
                 emptyTable: "Belum ada data armada",
-
                 paginate: {
                     first: "«",
                     last: "»",
                     next: "›",
                     previous: "‹"
                 },
-
                 processing: "Memuat data..."
             }
         });
@@ -182,6 +165,25 @@ require_once __DIR__ . '/../includes/navbar.php';
 
         document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-car text-primary mr-2"></i> Tambah Mobil Baru';
         document.getElementById('modal-car').classList.remove('hidden');
+
+        // Set tahun sekarang setelah modal tampil
+        requestAnimationFrame(() => {
+            const roller = document.getElementById('year-roller');
+            const yearInput = document.getElementById('year');
+
+            if (!roller || !yearInput) return;
+
+            const currentYear = new Date().getFullYear();
+            const currentYearEl = roller.querySelector(`[data-value="${currentYear}"]`);
+
+            if (!currentYearEl) return;
+
+            const rollerCenter = roller.clientHeight / 2;
+            const itemCenter = currentYearEl.offsetTop + (currentYearEl.clientHeight / 2);
+
+            roller.scrollTop = itemCenter - rollerCenter;
+            yearInput.value = currentYear;
+        });
     }
 
     // Close Modal
@@ -198,9 +200,8 @@ require_once __DIR__ . '/../includes/navbar.php';
         // Jika data berasal dari DB MySQL bertipe decimal (contoh: "500000.00")
         if (valStr.includes('.') && !valStr.includes(',')) {
             let parts = valStr.split('.');
-            // Jika dibelakang titik ada 1 atau 2 digit angka desimal (sen)
             if (parts.length === 2 && parts[1].length <= 2) {
-                valStr = parts[0]; // Ambil angka utamanya saja ("500000")
+                valStr = parts[0];
             }
         }
 
@@ -222,6 +223,7 @@ require_once __DIR__ . '/../includes/navbar.php';
         }
     });
 
+    // Update Fungsi editCar()
     // Update Fungsi editCar() dengan Konversi Math.round untuk Keamanan Ekstra
     async function editCar(id) {
         const res = await fetch(`<?= base_url('admin/mobil/api/get_by_id/') ?>${id}`);
@@ -238,12 +240,21 @@ require_once __DIR__ . '/../includes/navbar.php';
 
             // Konversi nilai desimal DB ke integer murni sebelum diformat
             document.getElementById('price_per_day').value = formatRupiahNumber(Math.round(parseFloat(data.price_per_day || 0)));
-            document.getElementById('price_per_weekend').value = formatRupiahNumber(Math.round(parseFloat(data.price_per_weekend || 0)));
-            document.getElementById('price_per_week').value = formatRupiahNumber(Math.round(parseFloat(data.price_per_week || 0)));
-            document.getElementById('price_per_month').value = formatRupiahNumber(Math.round(parseFloat(data.price_per_month || 0)));
 
             document.getElementById('plate_number').value = data.plate_number;
+
+            // Set nilai tahun dan sesuaikan posisi rol tahun sesuai data mobil
             document.getElementById('year').value = data.year;
+            requestAnimationFrame(() => {
+                const roller = document.getElementById('year-roller');
+                if (roller) {
+                    const targetYearEl = roller.querySelector(`[data-value="${data.year}"]`);
+                    if (targetYearEl) {
+                        roller.scrollTop = targetYearEl.offsetTop - roller.clientHeight / 2 + targetYearEl.clientHeight / 2;
+                    }
+                }
+            });
+
             document.getElementById('capacity').value = data.capacity;
             document.getElementById('transmission').value = data.transmission;
             document.getElementById('fuel_type').value = data.fuel_type;

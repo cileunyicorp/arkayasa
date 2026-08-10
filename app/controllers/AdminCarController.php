@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/../models/CarModel.php';
 require_once __DIR__ . '/../models/CategoryModel.php';
 
@@ -36,12 +37,11 @@ class AdminCarController
 
                 $car['status_html'] = "<span class=\"px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded-lg {$statusClass}\">" . htmlspecialchars($car['status']) . "</span>";
 
-                // KOREKSI: Gunakan Null Coalescing (??) dan konversi tipe data (float) agar aman dari Deprecated di PHP 8.1
+                // Konversi tipe data (float) agar aman dari Deprecated di PHP 8.1+
                 $price_day = (float)($car['price_per_day'] ?? 0);
-                $price_weekend = (float)($car['price_per_weekend'] ?? 0);
 
                 // Format Harga
-                $car['price_format'] = "W: Rp " . number_format($price_day, 0, ',', '.') . "<br><span class='text-[10px] text-slate-500'>WE: Rp " . number_format($price_weekend, 0, ',', '.') . "</span>";
+                $car['price_format'] = "Rp " . number_format($price_day, 0, ',', '.');
 
                 $img = !empty($car['primary_image']) ? base_url('admin/assets/uploads/cars/' . htmlspecialchars($car['primary_image'])) : '';
                 $car['image_url'] = $img;
@@ -54,7 +54,6 @@ class AdminCarController
             echo json_encode(['error' => 'Kesalahan Sistem: ' . $e->getMessage()]);
         }
     }
-
 
     public function get_by_id($id)
     {
@@ -79,11 +78,8 @@ class AdminCarController
             $plate_number = htmlspecialchars($_POST['plate_number'] ?? '');
             $category_id = (int)($_POST['category_id'] ?? 0);
 
-            // Harga Baru
-            $price_per_day     = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_day'] ?? '0');
-            $price_per_weekend = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_weekend'] ?? '0');
-            $price_per_week    = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_week'] ?? '0');
-            $price_per_month   = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_month'] ?? '0');
+            // Harga Harian
+            $price_per_day = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_day'] ?? '0');
 
             $year = (int)($_POST['year'] ?? date('Y'));
             $capacity = (int)($_POST['capacity'] ?? 4);
@@ -95,10 +91,10 @@ class AdminCarController
 
             $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $name))) . '-' . time();
 
-            $sql = "INSERT INTO cars (category_id, name, brand, plate_number, slug, price_per_day, price_per_weekend, price_per_week, price_per_month, year, capacity, transmission, fuel_type, status, description, features) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO cars (category_id, name, brand, plate_number, slug, price_per_day, year, capacity, transmission, fuel_type, status, description, features) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $db->prepare($sql);
-            $stmt->execute([$category_id, $name, $brand, $plate_number, $slug, $price_per_day, $price_per_weekend, $price_per_week, $price_per_month, $year, $capacity, $transmission, $fuel_type, $status, $description, $features]);
+            $stmt->execute([$category_id, $name, $brand, $plate_number, $slug, $price_per_day, $year, $capacity, $transmission, $fuel_type, $status, $description, $features]);
 
             $car_id = $db->lastInsertId();
             $this->handleUploads($car_id, $db);
@@ -122,11 +118,8 @@ class AdminCarController
             $plate_number = htmlspecialchars($_POST['plate_number'] ?? '');
             $category_id = (int)($_POST['category_id'] ?? 0);
 
-            // Harga Baru
-            $price_per_day     = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_day'] ?? '0');
-            $price_per_weekend = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_weekend'] ?? '0');
-            $price_per_week    = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_week'] ?? '0');
-            $price_per_month   = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_month'] ?? '0');
+            // Harga Harian
+            $price_per_day = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_day'] ?? '0');
 
             $year = (int)($_POST['year'] ?? date('Y'));
             $capacity = (int)($_POST['capacity'] ?? 4);
@@ -136,9 +129,9 @@ class AdminCarController
             $description = htmlspecialchars($_POST['description'] ?? '');
             $features = htmlspecialchars($_POST['features'] ?? '');
 
-            $sql = "UPDATE cars SET category_id=?, name=?, brand=?, plate_number=?, price_per_day=?, price_per_weekend=?, price_per_week=?, price_per_month=?, year=?, capacity=?, transmission=?, fuel_type=?, status=?, description=?, features=? WHERE id=?";
+            $sql = "UPDATE cars SET category_id=?, name=?, brand=?, plate_number=?, price_per_day=?, year=?, capacity=?, transmission=?, fuel_type=?, status=?, description=?, features=? WHERE id=?";
             $stmt = $db->prepare($sql);
-            $stmt->execute([$category_id, $name, $brand, $plate_number, $price_per_day, $price_per_weekend, $price_per_week, $price_per_month, $year, $capacity, $transmission, $fuel_type, $status, $description, $features, $id]);
+            $stmt->execute([$category_id, $name, $brand, $plate_number, $price_per_day, $year, $capacity, $transmission, $fuel_type, $status, $description, $features, $id]);
 
             if (isset($_FILES['images']) && count($_FILES['images']['name']) > 0 && $_FILES['images']['error'][0] != 4) {
                 $this->handleUploads($id, $db);
@@ -169,7 +162,7 @@ class AdminCarController
             $db->commit();
             echo json_encode(['status' => true, 'message' => 'Mobil beserta foto terhapus!']);
         } catch (Exception $e) {
-            $db->rollBack();
+            if (isset($db)) $db->rollBack();
             echo json_encode(['status' => false, 'message' => 'Gagal menghapus: ' . $e->getMessage()]);
         }
     }

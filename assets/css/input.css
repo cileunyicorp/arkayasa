@@ -480,3 +480,17 @@ textarea:focus {
 
   will-change: transform;
 }
+
+/* Styling khusus untuk Rol Tahun ala Mesin Lotre */
+.lottery-picker {
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.lottery-picker::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+.lottery-item {
+  scroll-snap-align: center;
+}

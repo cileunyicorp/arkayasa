@@ -29,23 +29,19 @@
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Brand Mobil <span class="text-rose-500">*</span></label>
                                 <input type="text" id="brand" name="brand" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50">
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kategori <span class="text-rose-500">*</span></label>
-                                <select id="category_id" name="category_id" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none">
-                                    <option value="">-- Pilih Kategori --</option>
-                                    <?php foreach ($categories as $cat) : ?>
-                                        <option value="<?= $cat['id'] ?>"><?= escape($cat['name']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Weekday <span class="text-rose-500">*</span></label>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Harian <span class="text-rose-500">*</span></label>
                                     <input type="text" id="price_per_day" name="price_per_day" required placeholder="0" class="input-rupiah w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50 font-semibold">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Weekend <span class="text-rose-500">*</span></label>
-                                    <input type="text" id="price_per_weekend" name="price_per_weekend" required placeholder="0" class="input-rupiah w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50 font-semibold">
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kategori <span class="text-rose-500">*</span></label>
+                                    <select id="category_id" name="category_id" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none">
+                                        <option value="">-- Pilih Kategori --</option>
+                                        <?php foreach ($categories as $cat) : ?>
+                                            <option value="<?= $cat['id'] ?>"><?= escape($cat['name']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -70,11 +66,24 @@
                             </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tahun</label>
-                                    <input type="number" id="year" name="year" required class="number-no-spinner w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tahun <span class="text-rose-500">*</span></label>
+                                    <div class="relative w-full h-[46px] rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 overflow-hidden">
+                                        <div id="year-roller" class="lottery-picker w-full h-full overflow-y-auto text-center cursor-pointer">
+                                            <div class="lottery-item h-[46px] select-none"></div>
+                                            <?php
+                                            $currentYear = date('Y');
+                                            for ($y = $currentYear + 1; $y >= $currentYear - 20; $y--) {
+                                                echo '<div class="lottery-item h-[46px] flex items-center justify-center text-slate-800 dark:text-slate-200 font-semibold text-sm select-none" data-value="' . $y . '">' . $y . '</div>';
+                                            }
+                                            ?>
+                                            <div class="lottery-item h-[46px] select-none"></div>
+                                        </div>
+
+                                        <input type="hidden" id="year" name="year" required value="<?= date('Y') ?>">
+                                    </div>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kursi</label>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kursi <span class="text-rose-500">*</span></label>
                                     <input type="number" id="capacity" name="capacity" required class="number-no-spinner w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50">
                                 </div>
                             </div>
@@ -95,16 +104,6 @@
                                         <option value="Listrik">Listrik</option>
                                         <option value="Hybrid">Hybrid</option>
                                     </select>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Sewa Mingguan <span class="text-rose-500">*</span></label>
-                                    <input type="text" id="price_per_week" name="price_per_week" required placeholder="0" class="input-rupiah w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50 font-semibold">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Sewa Bulanan <span class="text-rose-500">*</span></label>
-                                    <input type="text" id="price_per_month" name="price_per_month" required placeholder="0" class="input-rupiah w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50 font-semibold">
                                 </div>
                             </div>
                         </div>

@@ -5,9 +5,6 @@
                 <th scope="col" class="px-4 py-4 rounded-l-lg tracking-wider">Armada</th>
                 <th scope="col" class="px-4 py-4 tracking-wider">No. Polisi</th>
                 <th class="py-4 px-4 tracking-wider">Sewa Harian</th>
-                <th class="py-4 px-4 tracking-wider">Sewa Mingguan</th>
-                <th class="py-4 px-4 tracking-wider">Sewa Bulanan</th>
-                <th class="py-4 px-4 tracking-wider">Sewa Akhir Pekan</th>
                 <th class="py-4 px-4 tracking-wider">Spesifikasi</th>
                 <th class="py-4 px-4 tracking-wider">Status</th>
                 <th class="py-4 px-4 text-center rounded-r-lg tracking-wider">Aksi</th>
