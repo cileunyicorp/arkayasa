@@ -6,14 +6,13 @@ require_once __DIR__ . '/../includes/sidebar.php';
 require_once __DIR__ . '/../includes/navbar.php';
 ?>
 
-
 <div class="space-y-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Data Pelanggan</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">Kelola akun dan identitas (NIK/SIM) pengguna yang menyewa kendaraan.</p>
         </div>
-        <button onclick="openModalCustomer('add')" class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700-dark text-white rounded-xl shadow-lg shadow-primary/30 transition-all font-medium flex items-center gap-2">
+        <button onclick="openModalCustomer('add')" class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl shadow-lg shadow-primary/30 transition-all font-medium flex items-center gap-2">
             <i class="fa-solid fa-user-plus"></i> <span>Tambah Pelanggan</span>
         </button>
     </div>
@@ -82,7 +81,8 @@ require_once __DIR__ . '/../includes/navbar.php';
                 url: '<?= base_url('admin/pelanggan/api/get_all') ?>',
                 dataSrc: 'data'
             },
-            columns: [{
+            columns: [
+                {
                     data: null,
                     render: function(data, type, row) {
                         return `<div class="flex items-center gap-3">
@@ -113,6 +113,21 @@ require_once __DIR__ . '/../includes/navbar.php';
                 {
                     data: null,
                     className: 'text-center',
+                    render: function(data, type, row) {
+                        const ktpBadge = row.id_card_image_url 
+                            ? `<a href="${row.id_card_image_url}" target="_blank" class="px-2 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition">KTP <i class="fa-solid fa-arrow-up-right-from-square ml-0.5"></i></a>` 
+                            : `<span class="px-2 py-1 rounded-md text-[10px] bg-slate-100 text-slate-400">KTP -</span>`;
+                        
+                        const simBadge = row.driver_license_image_url 
+                            ? `<a href="${row.driver_license_image_url}" target="_blank" class="px-2 py-1 rounded-md text-[10px] font-bold bg-blue-100 text-blue-700 hover:bg-blue-200 transition">SIM <i class="fa-solid fa-arrow-up-right-from-square ml-0.5"></i></a>` 
+                            : `<span class="px-2 py-1 rounded-md text-[10px] bg-slate-100 text-slate-400">SIM -</span>`;
+
+                        return `<div class="flex items-center justify-center gap-1.5">${ktpBadge} ${simBadge}</div>`;
+                    }
+                },
+                {
+                    data: null,
+                    className: 'text-center',
                     render: row => `
                     <div class="flex justify-center gap-2">
                         <button onclick="editCustomer(${row.customer_id})" class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors shadow-sm" title="Edit">
@@ -132,7 +147,6 @@ require_once __DIR__ . '/../includes/navbar.php';
                 infoFiltered: "(difilter dari _MAX_ data)",
                 zeroRecords: "Pelanggan tidak ditemukan",
                 emptyTable: "Belum ada data pelanggan",
-
                 paginate: {
                     first: "«",
                     last: "»",
@@ -140,7 +154,6 @@ require_once __DIR__ . '/../includes/navbar.php';
                     previous: "‹"
                 },
                 processing: "Memuat data..."
-                
             }
         });
     }
@@ -151,6 +164,9 @@ require_once __DIR__ . '/../includes/navbar.php';
 
         document.getElementById('password').setAttribute('required', 'required');
         document.getElementById('pass-hint-edit').classList.add('hidden');
+
+        document.getElementById('preview-ktp').classList.add('hidden');
+        document.getElementById('preview-sim').classList.add('hidden');
 
         document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-user-plus text-primary mr-2"></i> Tambah Pelanggan Baru';
         document.getElementById('modal-customer').classList.remove('hidden');
@@ -180,6 +196,22 @@ require_once __DIR__ . '/../includes/navbar.php';
             document.getElementById('password').removeAttribute('required');
             document.getElementById('pass-hint-edit').classList.remove('hidden');
 
+            // Pratinjau KTP
+            if (data.id_card_image_url) {
+                document.getElementById('img-preview-ktp').src = data.id_card_image_url;
+                document.getElementById('preview-ktp').classList.remove('hidden');
+            } else {
+                document.getElementById('preview-ktp').classList.add('hidden');
+            }
+
+            // Pratinjau SIM
+            if (data.driver_license_image_url) {
+                document.getElementById('img-preview-sim').src = data.driver_license_image_url;
+                document.getElementById('preview-sim').classList.remove('hidden');
+            } else {
+                document.getElementById('preview-sim').classList.add('hidden');
+            }
+
             document.getElementById('modal-customer').classList.remove('hidden');
         }
     }
@@ -187,7 +219,7 @@ require_once __DIR__ . '/../includes/navbar.php';
     function deleteCustomer(id) {
         Swal.fire({
             title: 'Hapus Pelanggan?',
-            text: "Data akun dan profil pelanggan akan dihapus!",
+            text: "Data akun, profil, dan berkas foto pelanggan akan dihapus!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#e11d48',
@@ -195,9 +227,6 @@ require_once __DIR__ . '/../includes/navbar.php';
             confirmButtonText: 'Ya, Hapus!'
         }).then(async (res) => {
             if (res.isConfirmed) {
-                const formData = new FormData();
-                formData.append('id', id);
-
                 const response = await fetch(`<?= base_url('admin/pelanggan/delete/') ?>${id}`, {
                     method: 'POST'
                 });

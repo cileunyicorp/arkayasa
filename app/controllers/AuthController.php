@@ -1,15 +1,18 @@
 <?php
 require_once __DIR__ . '/../models/UserModel.php';
 
-class AuthController {
+class AuthController
+{
     private UserModel $userModel;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->userModel = new UserModel();
     }
 
     // Menampilkan Halaman Login
-    public function login() {
+    public function login()
+    {
         // Jika sudah login sebagai admin/operator, langsung ke dashboard
         if (isset($_SESSION['user_id']) && in_array($_SESSION['role_id'], [1, 2])) {
             redirect('admin/dashboard');
@@ -20,7 +23,8 @@ class AuthController {
     }
 
     // Memproses data POST dari form login
-    public function process() {
+    public function process()
+    {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $email = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
             $password = $_POST['password'] ?? '';
@@ -42,7 +46,8 @@ class AuthController {
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['role_id'] = $user['role_id'];
                     $_SESSION['user_name'] = $user['name'];
-
+                    $_SESSION['last_activity'] = time();
+                    $_SESSION['created_at'] = time();
                     redirect('admin/dashboard');
                 } else {
                     $_SESSION['error'] = "Anda tidak memiliki akses ke halaman admin.";
@@ -58,16 +63,22 @@ class AuthController {
     }
 
     // Menangani Logout
-    public function logout() {
+    public function logout()
+    {
         session_unset();
         session_destroy();
-        
+
         // Hapus cookie session jika ada
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000,
-                $params["path"], $params["domain"],
-                $params["secure"], $params["httponly"]
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params["path"],
+                $params["domain"],
+                $params["secure"],
+                $params["httponly"]
             );
         }
 
@@ -77,11 +88,12 @@ class AuthController {
         redirect('admin/login');
     }
 
-        // Timpa method dashboard yang lama dengan yang ini
-    public function dashboard() {
+    // Timpa method dashboard yang lama dengan yang ini
+    public function dashboard()
+    {
         require_once __DIR__ . '/../models/CarModel.php';
         require_once __DIR__ . '/../models/BookingModel.php';
-        
+
         $carModel = new CarModel();
         $bookingModel = new BookingModel();
         $userModel = new UserModel();
@@ -96,5 +108,4 @@ class AuthController {
         // Panggil view
         require_once __DIR__ . '/../../admin/dashboard.php';
     }
-
 }

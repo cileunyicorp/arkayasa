@@ -7,6 +7,7 @@
                 <th scope="col" class="px-4 py-4 tracking-wider">NIK KTP</th>
                 <th class="py-4 px-4 tracking-wider">No. SIM</th>
                 <th class="py-4 px-4 tracking-wider">Alamat</th>
+                <th class="py-4 px-4 text-center tracking-wider">Identitas (KTP/SIM)</th>
                 <th class="py-4 px-4 text-center rounded-r-lg tracking-wider">Aksi</th>
             </tr>
         </thead>
