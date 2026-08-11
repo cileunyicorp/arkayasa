@@ -7,12 +7,13 @@
                 <th scope="col" class="px-4 py-4 tracking-wider">Mobil</th>
                 <th class="py-4 px-4 tracking-wider">Tanggal Sewa</th>
                 <th class="py-4 px-4 tracking-wider">Total Bayar</th>
+                <th class="py-4 px-4 tracking-wider">Sisa Bayar</th>
                 <th class="py-4 px-4 tracking-wider">Status</th>
-                <th class="py-4 px-4 text-center rounded-r-lg tracking-wider">Detail</th>
+                <th class="py-4 px-4 text-center rounded-r-lg tracking-wider">Aksi</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
-            <!-- Data dipopulasi secara AJAX / DOM -->
+            <!-- Data dipopulasi secara AJAX / DataTables -->
         </tbody>
     </table>
 </div>

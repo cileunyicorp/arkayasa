@@ -48,6 +48,14 @@ class AdminBookingController
                 $b['status_html'] = "<span class=\"px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded-lg {$badgeClass}\">" . htmlspecialchars($b['status']) . "</span>";
                 $b['total_price_format'] = "Rp " . number_format($b['total_price'], 0, ',', '.');
 
+                // HITUNG SISA BAYAR (Total Price - Deposit)
+                $grandTotal = (float)($b['total_price'] ?? 0);
+                $deposit    = (float)($b['deposit'] ?? 0);
+                $sisa       = max(0, $grandTotal - $deposit);
+
+                $b['sisa_bayar'] = $sisa;
+                $b['sisa_bayar_format'] = "Rp " . number_format($sisa, 0, ',', '.');
+
                 // Format Tampilan Tanggal & Jam
                 $startDateFormatted = date('d M Y, H:i', strtotime($b['start_date']));
                 $endDateFormatted   = date('d M Y, H:i', strtotime($b['end_date']));
@@ -65,6 +73,7 @@ class AdminBookingController
             echo json_encode(['error' => $e->getMessage()]);
         }
     }
+
 
     // API: Get 1 Booking Detail
     public function get_by_id($id)

@@ -25,7 +25,7 @@
 
 <body class="bg-gray-100 py-10 print:py-0 print:bg-white text-slate-800">
 
-    <!-- Tombol Kontrol (Akan hilang saat diprint berkat class 'print:hidden') -->
+    <!-- Tombol Kontrol -->
     <div class="max-w-4xl mx-auto mb-6 print:hidden flex justify-between items-center px-4">
         <a href="javascript:window.close()" class="px-4 py-2 bg-slate-300 hover:bg-slate-400 text-slate-800 rounded-xl font-medium transition">
             <i class="fa-solid fa-arrow-left mr-1"></i> Kembali
@@ -61,7 +61,6 @@
             </div>
         </div>
 
-        <!-- Info Pelanggan & Status -->
         <?php
         $totalDays    = (int)($booking['total_days'] ?? 1);
         $carPriceDay  = (float)($booking['car_price'] ?? 0);
@@ -74,8 +73,8 @@
         $sewaMobilTotal  = $carPriceDay * $totalDays;
         $sewaDriverTotal = $driverFeeDay * $totalDays;
 
-        // KOREKSI UTAMA: Lunas HANYA jika sisa bayar = 0 (DP melunasi seluruh total) atau status sudah 'Selesai'
-        $isLunas = ($sisaBayar <= 0 && $grandTotal > 0) || ($booking['status'] === 'Selesai');
+        // DITEGASKAN MURNI KEUANGAN: LUNAS HANYA JIKA SISA BAYAR = 0
+        $isLunas = ($sisaBayar <= 0 && $grandTotal > 0);
         ?>
 
         <!-- Info Pelanggan & Status Pembayaran -->
@@ -93,24 +92,11 @@
                     <p class="text-xl font-black text-emerald-600 uppercase">LUNAS</p>
                 <?php else: ?>
                     <p class="text-xl font-black text-rose-600 uppercase">BELUM LUNAS</p>
-                    <p class="text-[11px] font-bold text-rose-500 mt-0.5">Sisa: Rp <?= number_format($sisaBayar, 0, ',', '.') ?></p>
+                    <p class="text-xs font-bold text-rose-600 mt-1">Sisa Tagihan: Rp <?= number_format($sisaBayar, 0, ',', '.') ?></p>
                 <?php endif; ?>
-                <p class="text-xs text-gray-500 mt-1 font-medium">Status Sewa: <span class="font-bold text-gray-700"><?= htmlspecialchars($booking['status'] ?? '-') ?></span></p>
+                <p class="text-xs text-gray-500 mt-2 font-medium">Status Sewa: <span class="font-bold text-gray-700"><?= htmlspecialchars($booking['status'] ?? '-') ?></span></p>
             </div>
         </div>
-
-
-        <?php
-        $totalDays   = (int)($booking['total_days'] ?? 1);
-        $carPriceDay = (float)($booking['car_price'] ?? 0);
-        $driverFeeDay = (float)($booking['driver_fee'] ?? 0);
-        $discount    = (float)($booking['discount'] ?? 0);
-        $grandTotal  = (float)($booking['total_price'] ?? 0);
-        $sisaBayar   = max(0, $grandTotal - $deposit);
-
-        $sewaMobilTotal = $carPriceDay * $totalDays;
-        $sewaDriverTotal = $driverFeeDay * $totalDays;
-        ?>
 
         <!-- Tabel Rincian -->
         <table class="w-full text-left border-collapse mb-6">
@@ -189,12 +175,12 @@
                 <?php endif; ?>
 
                 <div class="flex justify-between py-2 border-t border-gray-200 font-extrabold text-sm text-gray-900">
-                    <span>TOTAL SEWA:</span>
+                    <span>TOTAL TAGIHAN:</span>
                     <span>Rp <?= number_format($grandTotal, 0, ',', '.') ?></span>
                 </div>
 
                 <div class="flex justify-between py-1 text-emerald-700">
-                    <span>Uang Muka / Deposit (DP):</span>
+                    <span>Pembayaran Masuk (DP):</span>
                     <span class="font-semibold">Rp <?= number_format($deposit, 0, ',', '.') ?></span>
                 </div>
 
@@ -208,11 +194,11 @@
         <!-- Footer / TTD -->
         <div class="flex justify-between items-end mt-12 pt-6 border-t border-gray-100">
             <div class="text-[11px] text-gray-500 w-1/2 space-y-1">
-                <p class="font-bold text-gray-700 mb-1">Syarat & Ketentuan Tambahan:</p>
+                <p class="font-bold text-gray-700 mb-1">Syarat & Ketentuan Pembayaran:</p>
                 <ol class="list-decimal pl-4 space-y-0.5">
-                    <li>Penyewa wajib menunjukkan KTP & SIM asli saat serah terima unit.</li>
-                    <li>Keterlambatan pengembalian unit dikenakan denda sesuai dengan tarif harian.</li>
-                    <li>Segala bentuk kerusakan/kehilangan selama masa sewa menjadi tanggung jawab penyewa.</li>
+                    <li>Pelunasan sisa tagihan dilakukan sebelum atau saat penyerahan unit kendaraan.</li>
+                    <li>Bukti pembayaran ini sah setelah dana masuk ke rekening resmi perusahaan.</li>
+                    <li>Penyewa wajib membawa KTP dan SIM asli saat pengambilan armada.</li>
                 </ol>
             </div>
             <div class="text-center w-44">

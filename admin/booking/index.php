@@ -193,8 +193,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                 url: '<?= base_url('admin/booking/api/get_all') ?>',
                 dataSrc: 'data'
             },
-            columns: [
-                {
+            columns: [{
                     data: 'booking_code',
                     render: data => `<span class="font-mono font-bold text-primary">${data}</span>`
                 },
@@ -217,7 +216,17 @@ require_once __DIR__ . '/../includes/navbar.php';
                 },
                 {
                     data: 'total_price_format',
-                    render: data => `<span class="font-bold text-emerald-600 dark:text-emerald-400">${data}</span>`
+                    render: data => `<span class="font-bold text-slate-800 dark:text-slate-200">${data}</span>`
+                },
+                {
+                    data: null,
+                    render: row => {
+                        if (row.sisa_bayar <= 0) {
+                            return `<span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">Lunas</span>`;
+                        } else {
+                            return `<span class="font-bold text-rose-600 dark:text-rose-400">${row.sisa_bayar_format}</span>`;
+                        }
+                    }
                 },
                 {
                     data: 'status_html'
@@ -260,6 +269,7 @@ require_once __DIR__ . '/../includes/navbar.php';
             }
         });
     }
+
 
     // Modal Control: Tambah Booking
     function openModalBookingForm(type) {
@@ -317,18 +327,6 @@ require_once __DIR__ . '/../includes/navbar.php';
             document.getElementById('driver_fee').value = formatRupiahNumber(Math.round(parseFloat(data.driver_fee || 0)));
             document.getElementById('discount').value = formatRupiahNumber(Math.round(parseFloat(data.discount || 0)));
             document.getElementById('deposit').value = formatRupiahNumber(Math.round(parseFloat(data.deposit || 0)));
-
-            const previewGuarantee = document.getElementById('preview-guarantee');
-            const linkGuarantee = document.getElementById('link-preview-guarantee');
-            if (previewGuarantee && linkGuarantee) {
-                if (data.guarantee_file_url) {
-                    linkGuarantee.href = data.guarantee_file_url;
-                    previewGuarantee.classList.remove('hidden');
-                } else {
-                    previewGuarantee.classList.add('hidden');
-                }
-            }
-
             document.getElementById('status_form').value = data.status;
             document.getElementById('notes_form').value = data.notes || '';
 
