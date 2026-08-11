@@ -1,4 +1,5 @@
 <?php
+
 $routes = [
     ''                    => ['HomeController', 'index'],
     'home'                => ['HomeController', 'index'],
@@ -18,12 +19,14 @@ $routes = [
     'admin/mobil/update'          => ['AdminCarController', 'update'],
     'admin/mobil/delete'          => ['AdminCarController', 'delete'],
 
-    // --- MODUL BOOKING (Pastikan ini lengkap) ---
+    // --- MODUL BOOKING (SUDAH DILENGKAPI) ---
     'admin/booking'                 => ['AdminBookingController', 'index'],
     'admin/booking/api/get_all'     => ['AdminBookingController', 'get_all'],
     'admin/booking/api/get_by_id'   => ['AdminBookingController', 'get_by_id'],
     'admin/booking/store'           => ['AdminBookingController', 'store'],
     'admin/booking/update'          => ['AdminBookingController', 'update'],
+    'admin/booking/update_status'   => ['AdminBookingController', 'update_status'],
+    'admin/booking/delete'          => ['AdminBookingController', 'delete'],
     'admin/booking/invoice'         => ['AdminBookingController', 'invoice'],
 
     // --- RUTE MODUL PELANGGAN (ADMIN) ---
@@ -58,8 +61,6 @@ $routes = [
     'admin/keuangan/update'        => ['AdminFinanceController', 'update'],
     'admin/keuangan/delete'        => ['AdminFinanceController', 'delete'],
 
-
-
-
 ];
+
 return $routes;

@@ -12,7 +12,7 @@ require_once __DIR__ . '/../includes/navbar.php';
             <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Data Pemesanan Kendaraan</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">Verifikasi pembayaran, kelola peminjaman, dan penyerahan unit armada.</p>
         </div>
-        <button onclick="openModalBookingForm('add')" class="px-5 py-2.5 bg-primary-600 hover:hover:bg-primary-700 text-white rounded-xl shadow-lg shadow-primary-600/30 transition-all font-medium flex items-center gap-2">
+        <button onclick="openModalBookingForm('add')" class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl shadow-lg shadow-primary-600/30 transition-all font-medium flex items-center gap-2">
             <i class="fa-solid fa-calendar-plus"></i> <span>Input Booking</span>
         </button>
     </div>
@@ -36,7 +36,7 @@ require_once __DIR__ . '/../includes/navbar.php';
     document.addEventListener('DOMContentLoaded', function() {
         loadTableBooking();
 
-        // Handler Submit Form Booking (Tambah/Edit)
+        // Handler Submit Form Booking
         document.getElementById('form-booking').addEventListener('submit', async function(e) {
             e.preventDefault();
 
@@ -72,17 +72,119 @@ require_once __DIR__ . '/../includes/navbar.php';
                 Swal.fire({
                     icon: 'error',
                     title: 'Kesalahan Sistem',
-                    text: 'Gagal memproses data.'
+                    text: 'Gagal memproses transaksi.'
                 });
             }
         });
-
-        // Trigger Kalkulasi Otomatis ketika Form Berubah
-        const inputDates = ['start_date', 'end_date', 'car_id', 'rate_type'];
-        inputDates.forEach(id => {
-            document.getElementById(id).addEventListener('change', hitungBiayaOtomatis);
-        });
     });
+
+    // Helper Format Angka ke Rupiah
+    function formatRupiahNumber(val) {
+        if (val === null || val === undefined || val === '') return '';
+        let valStr = val.toString().trim();
+        if (valStr.includes('.') && !valStr.includes(',')) {
+            let parts = valStr.split('.');
+            if (parts.length === 2 && parts[1].length <= 2) valStr = parts[0];
+        }
+        let cleanVal = valStr.replace(/[^0-9]/g, '');
+        return cleanVal ? new Intl.NumberFormat('id-ID').format(cleanVal) : '';
+    }
+
+    function getUnformattedNum(id) {
+        let el = document.getElementById(id);
+        let val = el ? el.value : '0';
+        return parseFloat(val.toString().replace(/[^0-9]/g, '')) || 0;
+    }
+
+    // Toggle Tampilan Input Driver
+    function toggleDriverOption(isWithDriver) {
+        const driverContainer = document.getElementById('driver-select-container');
+        const driverSelect = document.getElementById('driver_id');
+        const driverFeeInput = document.getElementById('driver_fee');
+
+        if (isWithDriver) {
+            driverContainer.classList.remove('hidden');
+            driverSelect.setAttribute('required', 'required');
+            driverFeeInput.removeAttribute('readonly');
+            driverFeeInput.classList.remove('bg-slate-100', 'dark:bg-slate-800');
+        } else {
+            driverContainer.classList.add('hidden');
+            driverSelect.removeAttribute('required');
+            driverSelect.value = '';
+            driverFeeInput.value = '0';
+            driverFeeInput.setAttribute('readonly', 'readonly');
+            driverFeeInput.classList.add('bg-slate-100', 'dark:bg-slate-800');
+        }
+        hitungRingkasanBooking();
+    }
+
+    // Event listener untuk kalkulasi real-time di Modal Booking
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('input-rupiah')) {
+            let cursorPosition = e.target.selectionStart;
+            let originalLength = e.target.value.length;
+
+            e.target.value = formatRupiahNumber(e.target.value);
+
+            let newLength = e.target.value.length;
+            cursorPosition = cursorPosition + (newLength - originalLength);
+            e.target.setSelectionRange(cursorPosition, cursorPosition);
+        }
+
+        if (['start_date', 'end_date', 'car_id', 'driver_id', 'price_per_day', 'driver_fee', 'discount', 'deposit'].includes(e.target.id)) {
+            hitungRingkasanBooking();
+        }
+    });
+
+    document.addEventListener('change', function(e) {
+        if (['car_id', 'driver_id'].includes(e.target.id)) {
+            if (e.target.id === 'car_id') {
+                const opt = e.target.options[e.target.selectedIndex];
+                if (opt && opt.getAttribute('data-price')) {
+                    document.getElementById('price_per_day').value = formatRupiahNumber(opt.getAttribute('data-price'));
+                }
+            }
+            if (e.target.id === 'driver_id') {
+                const opt = e.target.options[e.target.selectedIndex];
+                if (opt && opt.getAttribute('data-price')) {
+                    document.getElementById('driver_fee').value = formatRupiahNumber(opt.getAttribute('data-price'));
+                } else {
+                    document.getElementById('driver_fee').value = '0';
+                }
+            }
+            hitungRingkasanBooking();
+        }
+    });
+
+    function hitungRingkasanBooking() {
+        const start = document.getElementById('start_date').value;
+        const end = document.getElementById('end_date').value;
+
+        let totalDays = 0;
+        if (start && end) {
+            const d1 = new Date(start);
+            const d2 = new Date(end);
+            const diffMs = d2 - d1;
+            let totalHours = Math.ceil(diffMs / (1000 * 60 * 60));
+            totalDays = Math.ceil(totalHours / 24);
+            if (totalDays <= 0) totalDays = 1;
+        }
+
+        const priceDay = getUnformattedNum('price_per_day');
+        const driverFee = getUnformattedNum('driver_fee');
+        const discount = getUnformattedNum('discount');
+        const deposit = getUnformattedNum('deposit');
+
+        const biayaSewa = (priceDay * totalDays) + (driverFee * totalDays);
+        const grandTotal = Math.max(0, biayaSewa - discount);
+        const sisaBayar = Math.max(0, grandTotal - deposit);
+
+        document.getElementById('disp-durasi').textContent = `${totalDays} hari`;
+        document.getElementById('disp-sewa').textContent = `Rp ${formatRupiahNumber(biayaSewa)}`;
+        document.getElementById('disp-total').textContent = `Rp ${formatRupiahNumber(grandTotal)}`;
+        document.getElementById('disp-sisa').textContent = `Rp ${formatRupiahNumber(sisaBayar)}`;
+        document.getElementById('total_days').value = totalDays;
+    }
 
     // Inisialisasi DataTables
     function loadTableBooking() {
@@ -91,7 +193,8 @@ require_once __DIR__ . '/../includes/navbar.php';
                 url: '<?= base_url('admin/booking/api/get_all') ?>',
                 dataSrc: 'data'
             },
-            columns: [{
+            columns: [
+                {
                     data: 'booking_code',
                     render: data => `<span class="font-mono font-bold text-primary">${data}</span>`
                 },
@@ -124,11 +227,9 @@ require_once __DIR__ . '/../includes/navbar.php';
                     className: 'text-center',
                     render: row => `
                     <div class="flex justify-center gap-1.5">
-                        <!-- Tombol Cetak Invoice -->
                         <a href="<?= base_url('admin/booking/invoice/') ?>${row.id}" target="_blank" class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-all shadow-sm flex items-center justify-center" title="Cetak Invoice">
                             <i class="fa-solid fa-print text-xs"></i>
                         </a>
-                        
                         <button onclick="showDetailBooking(${row.id})" class="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all shadow-sm" title="Approval & Detail">
                             <i class="fa-solid fa-eye text-xs"></i>
                         </button>
@@ -140,26 +241,21 @@ require_once __DIR__ . '/../includes/navbar.php';
                         </button>
                     </div>`
                 }
-
             ],
             language: {
                 lengthMenu: "Tampilkan _MENU_ data",
                 search: "Cari:",
-
                 info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
                 infoEmpty: "Tidak ada data",
                 infoFiltered: "(difilter dari _MAX_ data)",
-
                 zeroRecords: "Belum ada transaksi sewa",
                 emptyTable: "Belum ada data armada",
-
                 paginate: {
                     first: "«",
                     last: "»",
                     next: "›",
                     previous: "‹"
                 },
-
                 processing: "Memuat data..."
             }
         });
@@ -170,15 +266,27 @@ require_once __DIR__ . '/../includes/navbar.php';
         document.getElementById('form-booking').reset();
         document.getElementById('booking-id-form').value = '';
 
+        toggleDriverOption(false);
+
+        const now = new Date();
+        const nowIso = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+        const tomorrow = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+        const tomorrowIso = new Date(tomorrow.getTime() - (tomorrow.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+
+        document.getElementById('start_date').value = nowIso;
+        document.getElementById('end_date').value = tomorrowIso;
+
         document.getElementById('modal-title-form').innerHTML = '<i class="fa-solid fa-calendar-plus text-primary mr-2"></i> Input Booking Baru';
         document.getElementById('modal-booking-form').classList.remove('hidden');
+
+        hitungRingkasanBooking();
     }
 
     function closeModalBookingForm() {
         document.getElementById('modal-booking-form').classList.add('hidden');
     }
 
-    // Fetch untuk Form Edit
+    // Populate data untuk Edit Transaksi
     async function editBooking(id) {
         const res = await fetch(`<?= base_url('admin/booking/api/get_by_id/') ?>${id}`);
         const result = await res.json();
@@ -190,47 +298,42 @@ require_once __DIR__ . '/../includes/navbar.php';
             document.getElementById('booking-id-form').value = data.id;
             document.getElementById('customer_id').value = data.customer_id;
             document.getElementById('car_id').value = data.car_id;
-            document.getElementById('start_date').value = data.start_date;
-            document.getElementById('end_date').value = data.end_date;
-            document.getElementById('total_days').value = data.total_days;
-            document.getElementById('total_price').value = data.total_price;
+
+            // Set Pilihan Driver
+            if (data.driver_id && parseInt(data.driver_id) > 0) {
+                document.querySelectorAll('input[name="with_driver"]')[1].checked = true;
+                toggleDriverOption(true);
+                document.getElementById('driver_id').value = data.driver_id;
+            } else {
+                document.querySelectorAll('input[name="with_driver"]')[0].checked = true;
+                toggleDriverOption(false);
+            }
+
+            document.getElementById('start_date').value = data.start_date_raw;
+            document.getElementById('end_date').value = data.end_date_raw;
+
+            const hargaSewa = data.price_per_day || data.car_price || 0;
+            document.getElementById('price_per_day').value = formatRupiahNumber(Math.round(parseFloat(hargaSewa)));
+            document.getElementById('driver_fee').value = formatRupiahNumber(Math.round(parseFloat(data.driver_fee || 0)));
+            document.getElementById('discount').value = formatRupiahNumber(Math.round(parseFloat(data.discount || 0)));
+            document.getElementById('deposit').value = formatRupiahNumber(Math.round(parseFloat(data.deposit || 0)));
+
+            const previewGuarantee = document.getElementById('preview-guarantee');
+            const linkGuarantee = document.getElementById('link-preview-guarantee');
+            if (previewGuarantee && linkGuarantee) {
+                if (data.guarantee_file_url) {
+                    linkGuarantee.href = data.guarantee_file_url;
+                    previewGuarantee.classList.remove('hidden');
+                } else {
+                    previewGuarantee.classList.add('hidden');
+                }
+            }
+
             document.getElementById('status_form').value = data.status;
-            document.getElementById('notes_form').value = data.notes;
+            document.getElementById('notes_form').value = data.notes || '';
 
             document.getElementById('modal-booking-form').classList.remove('hidden');
-        }
-    }
-
-    // Kalkulator Otomatis durasi hari dan mengalikan harga sesuai tipe tarif
-    function hitungBiayaOtomatis() {
-        const start = document.getElementById('start_date').value;
-        const end = document.getElementById('end_date').value;
-        const carSelect = document.getElementById('car_id');
-        const rateType = document.getElementById('rate_type').value;
-
-        if (start && end && carSelect.value !== "") {
-            const date1 = new Date(start);
-            const date2 = new Date(end);
-
-            const diffTime = Math.abs(date2 - date1);
-            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            if (diffDays === 0) diffDays = 1;
-
-            document.getElementById('total_days').value = diffDays;
-
-            const activeOption = carSelect.options[carSelect.selectedIndex];
-            const pDay = parseFloat(activeOption.getAttribute('data-p-day') || 0);
-            const pWeekend = parseFloat(activeOption.getAttribute('data-p-weekend') || 0);
-            const pWeek = parseFloat(activeOption.getAttribute('data-p-week') || 0);
-            const pMonth = parseFloat(activeOption.getAttribute('data-p-month') || 0);
-
-            let pricePerUnit = pDay;
-            if (rateType === 'weekend') pricePerUnit = pWeekend;
-            if (rateType === 'week') pricePerUnit = pWeek / 7;
-            if (rateType === 'month') pricePerUnit = pMonth / 30;
-
-            const grandTotal = Math.round(pricePerUnit * diffDays);
-            document.getElementById('total_price').value = grandTotal;
+            hitungRingkasanBooking();
         }
     }
 
@@ -271,9 +374,7 @@ require_once __DIR__ . '/../includes/navbar.php';
         });
     }
 
-    // ==========================================
-    // JS UNTUK MODAL DETAIL & APPROVAL (BARU & LENGKAP)
-    // ==========================================
+    // Modal Detail & Approval
     async function showDetailBooking(id) {
         const res = await fetch(`<?= base_url('admin/booking/api/get_by_id/') ?>${id}`);
         const result = await res.json();
@@ -281,45 +382,68 @@ require_once __DIR__ . '/../includes/navbar.php';
         if (result.status) {
             const data = result.data;
 
-            // Set ID ke hidden field modal detail
             document.getElementById('booking-id').value = data.id;
 
-            // Mapping Data Pelanggan & Mobil
             document.getElementById('det-code').textContent = data.booking_code;
-            document.getElementById('det-customer').textContent = `${data.customer_name} (NIK: ${data.customer_nik})`;
-            document.getElementById('det-phone').textContent = data.customer_phone;
-            document.getElementById('det-email').textContent = data.customer_email;
-            document.getElementById('det-address').textContent = data.customer_address;
-            document.getElementById('det-car').textContent = `${data.car_brand} ${data.car_name} [${data.car_plate}]`;
+            document.getElementById('det-customer').textContent = `${data.customer_name} (NIK: ${data.customer_nik || '-'})`;
+            document.getElementById('det-phone').textContent = data.customer_phone || '-';
+            document.getElementById('det-email').textContent = data.customer_email || '-';
+            document.getElementById('det-address').textContent = data.customer_address || '-';
+            document.getElementById('det-car').textContent = `${data.car_brand || ''} ${data.car_name} [${data.car_plate}]`;
 
-            // Sewa info
+            // Driver Info
+            const wrapperDriver = document.getElementById('wrapper-det-driver');
+            if (wrapperDriver) {
+                if (data.driver_name) {
+                    document.getElementById('det-driver').textContent = `${data.driver_name} (${data.driver_phone || '-'})`;
+                    wrapperDriver.classList.remove('hidden');
+                } else {
+                    wrapperDriver.classList.add('hidden');
+                }
+            }
+
+            // Guarantee File Link
+            const guaranteeLink = document.getElementById('det-guarantee-link');
+            const guaranteeNone = document.getElementById('det-guarantee-none');
+            if (guaranteeLink && guaranteeNone) {
+                if (data.guarantee_file_url) {
+                    guaranteeLink.href = data.guarantee_file_url;
+                    guaranteeLink.classList.remove('hidden');
+                    guaranteeNone.classList.add('hidden');
+                } else {
+                    guaranteeLink.classList.add('hidden');
+                    guaranteeNone.classList.remove('hidden');
+                }
+            }
+
             document.getElementById('det-date').textContent = `${data.start_date_format} s/d ${data.end_date_format} (${data.total_days} Hari)`;
             document.getElementById('det-price').textContent = data.total_price_format;
             document.getElementById('det-status').innerHTML = `<span class="px-2.5 py-1 text-xs font-bold uppercase tracking-wide rounded-lg bg-indigo-50 dark:bg-neutral-900 text-primary">${data.status}</span>`;
             document.getElementById('det-notes').textContent = data.notes ? data.notes : '-';
 
-            // Logika Tombol Aksi Dinamis berdasarkan status terkini
+            // GENERATE TOMBOL AKSI DINAMIS BERSAMA DENGAN ID LANGSUNG
             const containerBtn = document.getElementById('wrapper-action-btn');
-            containerBtn.innerHTML = ''; // Reset tombol
+            containerBtn.innerHTML = '';
+
+            const bookingId = data.id;
 
             if (data.status === 'Menunggu Pembayaran') {
                 containerBtn.innerHTML = `
-                    <button type="button" onclick="processStatus('Reject')" class="px-4 py-2.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition font-semibold text-sm">Tolak Pesanan</button>
-                    <button type="button" onclick="processStatus('Approve')" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:hover:bg-primary-700 text-white shadow-lg transition font-semibold text-sm">Setujui Pembayaran</button>
+                    <button type="button" onclick="processStatus(${bookingId}, 'Reject')" class="px-4 py-2.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition font-semibold text-sm">Tolak Pesanan</button>
+                    <button type="button" onclick="processStatus(${bookingId}, 'Approve')" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white shadow-lg transition font-semibold text-sm">Setujui Pembayaran</button>
                 `;
-            } else if (data.status === 'Approve') {
+            } else if (data.status === 'Approve' || data.status === 'Reservasi') {
                 containerBtn.innerHTML = `
-                    <button type="button" onclick="processStatus('Dipinjam')" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition font-semibold text-sm">Mulai Pinjam (Jalan)</button>
+                    <button type="button" onclick="processStatus(${bookingId}, 'Dipinjam')" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition font-semibold text-sm">Mulai Pinjam (Jalan)</button>
                 `;
             } else if (data.status === 'Dipinjam') {
                 containerBtn.innerHTML = `
-                    <button type="button" onclick="processStatus('Selesai')" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg transition font-semibold text-sm">Selesai / Mobil Kembali</button>
+                    <button type="button" onclick="processStatus(${bookingId}, 'Selesai')" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg transition font-semibold text-sm">Selesai / Mobil Kembali</button>
                 `;
             } else {
-                containerBtn.innerHTML = `<span class="text-xs text-slate-400 italic">Pesanan ini sudah selesai dan tidak butuh aksi lanjutan.</span>`;
+                containerBtn.innerHTML = `<span class="text-xs text-slate-400 italic">Pesanan ini sudah selesai/batal.</span>`;
             }
 
-            // Tampilkan Modal Detail
             document.getElementById('modal-detail-booking').classList.remove('hidden');
         }
     }
@@ -328,9 +452,21 @@ require_once __DIR__ . '/../includes/navbar.php';
         document.getElementById('modal-detail-booking').classList.add('hidden');
     }
 
-    // Proses Perubahan Status
-    async function processStatus(statusName) {
-        const id = document.getElementById('booking-id').value;
+    // TUNGGAL & TEPAT: Fungsi untuk Memproses Perubahan Status Booking
+    async function processStatus(id, statusName) {
+        if (!id) {
+            id = document.getElementById('booking-id').value;
+        }
+
+        if (!id) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: 'ID transaksi tidak ditemukan.'
+            });
+            return;
+        }
+
         const formData = new FormData();
         formData.append('id', id);
         formData.append('status', statusName);
@@ -345,27 +481,35 @@ require_once __DIR__ . '/../includes/navbar.php';
             confirmButtonText: 'Ya, Proses'
         }).then(async (result) => {
             if (result.isConfirmed) {
-                const response = await fetch('<?= base_url('admin/booking/update_status') ?>', {
-                    method: 'POST',
-                    body: formData
-                });
-                const resData = await response.json();
-
-                if (resData.status) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: resData.message,
-                        timer: 1500,
-                        showConfirmButton: false
+                try {
+                    const response = await fetch('<?= base_url('admin/booking/update_status') ?>', {
+                        method: 'POST',
+                        body: formData
                     });
-                    closeModalBooking();
-                    tableBooking.ajax.reload(null, false);
-                } else {
+                    const resData = await response.json();
+
+                    if (resData.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: resData.message,
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        closeModalBooking();
+                        tableBooking.ajax.reload(null, false);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: resData.message
+                        });
+                    }
+                } catch (err) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Gagal',
-                        text: resData.message
+                        title: 'Kesalahan Sistem',
+                        text: 'Gagal menghubungi server.'
                     });
                 }
             }

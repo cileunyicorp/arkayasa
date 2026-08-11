@@ -1,30 +1,36 @@
 <?php
+
 require_once __DIR__ . '/../models/BookingModel.php';
 require_once __DIR__ . '/../models/CarModel.php';
 require_once __DIR__ . '/../models/CustomerModel.php';
+require_once __DIR__ . '/../models/DriverModel.php';
 
 class AdminBookingController
 {
     private BookingModel $bookingModel;
     private CarModel $carModel;
     private CustomerModel $customerModel;
+    private DriverModel $driverModel;
 
     public function __construct()
     {
-        $this->bookingModel = new BookingModel();
-        $this->carModel = new CarModel();
+        $this->bookingModel  = new BookingModel();
+        $this->carModel      = new CarModel();
         $this->customerModel = new CustomerModel();
+        $this->driverModel   = new DriverModel();
     }
 
     // Tampilkan View Utama
     public function index()
     {
-        $cars = $this->carModel->getAllWithDetails();
+        $cars      = $this->carModel->getAllWithDetails();
         $customers = $this->customerModel->getAllWithUsers();
+        $drivers   = $this->driverModel->getAllAvailable();
+
         require_once __DIR__ . '/../../admin/booking/index.php';
     }
 
-    // API: Get All Bookings dengan Format Datetime untuk Tampilan Tabel
+    // API: Get All Bookings untuk DataTables
     public function get_all()
     {
         header('Content-Type: application/json; charset=utf-8');
@@ -42,11 +48,16 @@ class AdminBookingController
                 $b['status_html'] = "<span class=\"px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded-lg {$badgeClass}\">" . htmlspecialchars($b['status']) . "</span>";
                 $b['total_price_format'] = "Rp " . number_format($b['total_price'], 0, ',', '.');
 
-                // Format Tampilan Tanggal & Jam (Contoh: 10 Aug 2026, 14:00)
+                // Format Tampilan Tanggal & Jam
                 $startDateFormatted = date('d M Y, H:i', strtotime($b['start_date']));
                 $endDateFormatted   = date('d M Y, H:i', strtotime($b['end_date']));
 
                 $b['dates_format'] = "<b>{$startDateFormatted}</b><br><span class='text-xs text-slate-400'>s/d {$endDateFormatted} ({$b['total_days']} Hari)</span>";
+                
+                // URL Berkas Jaminan
+                $b['guarantee_file_url'] = !empty($b['guarantee_file']) 
+                    ? base_url('admin/assets/uploads/bookings/' . htmlspecialchars($b['guarantee_file'])) 
+                    : null;
             }
 
             echo json_encode(['data' => $bookings]);
@@ -55,7 +66,7 @@ class AdminBookingController
         }
     }
 
-    // API: Get 1 Booking Detail (Juga Menyiapkan Format Datetime untuk Input HTML)
+    // API: Get 1 Booking Detail
     public function get_by_id($id)
     {
         header('Content-Type: application/json; charset=utf-8');
@@ -65,9 +76,14 @@ class AdminBookingController
             $booking['start_date_format'] = date('d F Y, H:i', strtotime($booking['start_date']));
             $booking['end_date_format']   = date('d F Y, H:i', strtotime($booking['end_date']));
 
-            // Format khusus untuk elemen <input type="datetime-local"> (YYYY-MM-DDTHH:MM)
+            // Format khusus untuk input datetime-local
             $booking['start_date_raw'] = date('Y-m-d\TH:i', strtotime($booking['start_date']));
             $booking['end_date_raw']   = date('Y-m-d\TH:i', strtotime($booking['end_date']));
+
+            // URL Berkas Jaminan
+            $booking['guarantee_file_url'] = !empty($booking['guarantee_file']) 
+                ? base_url('admin/assets/uploads/bookings/' . htmlspecialchars($booking['guarantee_file'])) 
+                : null;
 
             echo json_encode(['status' => true, 'data' => $booking]);
         } else {
@@ -75,21 +91,20 @@ class AdminBookingController
         }
     }
 
-    // Simpan Booking Baru dengan Kalkulasi Jam Presisi
+    // Simpan Booking Baru
     public function store()
     {
         header('Content-Type: application/json; charset=utf-8');
         try {
             $db = Database::getConnection();
-            $db->beginTransaction();
 
             $customer_id = (int)($_POST['customer_id'] ?? 0);
             $car_id      = (int)($_POST['car_id'] ?? 0);
-            $driver_id   = !empty($_POST['driver_id']) ? (int)$_POST['driver_id'] : null;
+            $driver_id   = (!empty($_POST['driver_id']) && (int)$_POST['driver_id'] > 0) ? (int)$_POST['driver_id'] : null;
 
             $start_raw   = $_POST['start_date'] ?? '';
             $end_raw     = $_POST['end_date'] ?? '';
-            $status      = $_POST['status'] ?? 'Reservasi';
+            $status      = $_POST['status'] ?? 'Menunggu Pembayaran';
             $notes       = htmlspecialchars($_POST['notes'] ?? '');
 
             // Clean Input Nominal
@@ -102,10 +117,15 @@ class AdminBookingController
                 throw new Exception("Seluruh kolom wajib bertanda bintang (*) harus diisi!");
             }
 
+            // Process Upload Berkas Jaminan (Max 2MB)
+            $guaranteeFile = $this->handleGuaranteeUpload();
+
+            $db->beginTransaction();
+
             $start_date = str_replace('T', ' ', $start_raw);
             $end_date   = str_replace('T', ' ', $end_raw);
 
-            // Hitung Durasi Hari
+            // Hitung Durasi Hari Presisi
             $dStart = new DateTime($start_date);
             $dEnd   = new DateTime($end_date);
             $diff   = $dStart->diff($dEnd);
@@ -119,19 +139,19 @@ class AdminBookingController
 
             $booking_code = 'TRX-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -5));
 
-            $sql = "INSERT INTO bookings (booking_code, customer_id, car_id, driver_id, start_date, end_date, total_days, total_price, driver_fee, discount, deposit, status, notes) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO bookings (booking_code, customer_id, car_id, driver_id, start_date, end_date, total_days, total_price, driver_fee, discount, deposit, status, notes, guarantee_file) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $db->prepare($sql);
-            $stmt->execute([$booking_code, $customer_id, $car_id, $driver_id, $start_date, $end_date, $total_days, $total_price, $driver_fee, $discount, $deposit, $status, $notes]);
+            $stmt->execute([$booking_code, $customer_id, $car_id, $driver_id, $start_date, $end_date, $total_days, $total_price, $driver_fee, $discount, $deposit, $status, $notes, $guaranteeFile]);
 
-            // Update status mobil
+            // Update Status Mobil
             if (in_array($status, ['Approve', 'Reservasi', 'Dipinjam'])) {
                 $carStatus = ($status === 'Dipinjam') ? 'Disewa' : 'Reservasi';
                 $stmtCar   = $db->prepare("UPDATE cars SET status = ? WHERE id = ?");
                 $stmtCar->execute([$carStatus, $car_id]);
             }
 
-            // Jika driver dipilih & disewa
+            // Update Status Driver
             if ($driver_id && in_array($status, ['Dipinjam', 'Approve', 'Reservasi'])) {
                 $stmtDrv = $db->prepare("UPDATE drivers SET status = 'Disewa' WHERE id = ?");
                 $stmtDrv->execute([$driver_id]);
@@ -140,33 +160,43 @@ class AdminBookingController
             $db->commit();
             echo json_encode(['status' => true, 'message' => 'Pemesanan baru berhasil disimpan!']);
         } catch (Exception $e) {
-            if (isset($db)) $db->rollBack();
+            if (isset($db) && $db->inTransaction()) $db->rollBack();
             echo json_encode(['status' => false, 'message' => $e->getMessage()]);
         }
     }
 
-
-    // Edit Booking dengan Kalkulasi Jam Presisi
+    // Edit Pemesanan
     public function update($id)
     {
         header('Content-Type: application/json; charset=utf-8');
         try {
             $db = Database::getConnection();
-            $db->beginTransaction();
 
-            $customer_id = (int)($_POST['customer_id'] ?? 0);
-            $car_id      = (int)($_POST['car_id'] ?? 0);
-            $start_raw   = $_POST['start_date'] ?? '';
-            $end_raw     = $_POST['end_date'] ?? '';
-            $rate_type   = $_POST['rate_type'] ?? 'weekday';
-            $status      = $_POST['status'] ?? 'Menunggu Pembayaran';
-            $notes       = htmlspecialchars($_POST['notes'] ?? '');
+            $customer_id   = (int)($_POST['customer_id'] ?? 0);
+            $car_id        = (int)($_POST['car_id'] ?? 0);
+            $driver_id     = (!empty($_POST['driver_id']) && (int)$_POST['driver_id'] > 0) ? (int)$_POST['driver_id'] : null;
+
+            $start_raw     = $_POST['start_date'] ?? '';
+            $end_raw       = $_POST['end_date'] ?? '';
+            $status        = $_POST['status'] ?? 'Menunggu Pembayaran';
+            $notes         = htmlspecialchars($_POST['notes'] ?? '');
+
+            $price_per_day = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_day'] ?? '0');
+            $driver_fee    = (float)preg_replace('/[^0-9]/', '', $_POST['driver_fee'] ?? '0');
+            $discount      = (float)preg_replace('/[^0-9]/', '', $_POST['discount'] ?? '0');
+            $deposit       = (float)preg_replace('/[^0-9]/', '', $_POST['deposit'] ?? '0');
+
+            // Ambil data transaksi lama
+            $oldBooking = $this->bookingModel->findById((int)$id);
+            if (!$oldBooking) throw new Exception("Data transaksi tidak ditemukan!");
+
+            // Process Upload Berkas Jaminan Baru jika ada
+            $newGuaranteeFile = $this->handleGuaranteeUpload($oldBooking['guarantee_file'] ?? null);
+
+            $db->beginTransaction();
 
             $start_date = str_replace('T', ' ', $start_raw);
             $end_date   = str_replace('T', ' ', $end_raw);
-
-            $car = $this->carModel->findById($car_id);
-            if (!$car) throw new Exception("Armada mobil tidak valid!");
 
             $dStart = new DateTime($start_date);
             $dEnd   = new DateTime($end_date);
@@ -176,37 +206,45 @@ class AdminBookingController
             $total_days  = (int)ceil($total_hours / 24);
             if ($total_days <= 0) $total_days = 1;
 
-            $price_unit = (float)$car['price_per_day'];
-            if ($rate_type === 'weekend') $price_unit = (float)$car['price_per_weekend'];
-            if ($rate_type === 'week')    $price_unit = (float)$car['price_per_week'] / 7;
-            if ($rate_type === 'month')   $price_unit = (float)$car['price_per_month'] / 30;
+            $biaya_sewa  = ($price_per_day * $total_days) + ($driver_fee * $total_days);
+            $total_price = max(0, $biaya_sewa - $discount);
 
-            if ($price_unit <= 0) $price_unit = (float)$car['price_per_day'];
-
-            $total_price = round($price_unit * $total_days);
-
-            $oldBooking = $this->bookingModel->findById((int)$id);
-            if ($oldBooking && $oldBooking['car_id'] != $car_id) {
-                $stmtReset = $db->prepare("UPDATE cars SET status = 'Tersedia' WHERE id = ?");
-                $stmtReset->execute([$oldBooking['car_id']]);
+            // Reset status mobil lama jika mobil diganti
+            if ($oldBooking['car_id'] != $car_id) {
+                $stmtResetCar = $db->prepare("UPDATE cars SET status = 'Tersedia' WHERE id = ?");
+                $stmtResetCar->execute([$oldBooking['car_id']]);
             }
 
-            $sql = "UPDATE bookings SET customer_id=?, car_id=?, start_date=?, end_date=?, total_days=?, total_price=?, status=?, notes=? WHERE id=?";
-            $stmt = $db->prepare($sql);
-            $stmt->execute([$customer_id, $car_id, $start_date, $end_date, $total_days, $total_price, $status, $notes, $id]);
+            // Reset status driver lama jika driver diganti/dicopot
+            if ($oldBooking['driver_id'] && $oldBooking['driver_id'] != $driver_id) {
+                $stmtResetDrv = $db->prepare("UPDATE drivers SET status = 'Tersedia' WHERE id = ?");
+                $stmtResetDrv->execute([$oldBooking['driver_id']]);
+            }
 
+            $sql = "UPDATE bookings SET customer_id=?, car_id=?, driver_id=?, start_date=?, end_date=?, total_days=?, total_price=?, driver_fee=?, discount=?, deposit=?, status=?, notes=?, guarantee_file=? WHERE id=?";
+            $stmt = $db->prepare($sql);
+            $stmt->execute([$customer_id, $car_id, $driver_id, $start_date, $end_date, $total_days, $total_price, $driver_fee, $discount, $deposit, $status, $notes, $newGuaranteeFile, $id]);
+
+            // Update status mobil baru
             $carStatus = 'Tersedia';
-            if ($status === 'Approve') $carStatus = 'Reservasi';
+            if (in_array($status, ['Approve', 'Reservasi'])) $carStatus = 'Reservasi';
             if ($status === 'Dipinjam') $carStatus = 'Disewa';
             if (in_array($status, ['Selesai', 'Reject', 'Dikembalikan'])) $carStatus = 'Tersedia';
 
             $stmtCar = $db->prepare("UPDATE cars SET status = ? WHERE id = ?");
             $stmtCar->execute([$carStatus, $car_id]);
 
+            // Update status driver baru
+            if ($driver_id) {
+                $drvStatus = in_array($status, ['Selesai', 'Reject', 'Dikembalikan']) ? 'Tersedia' : 'Disewa';
+                $stmtDrv = $db->prepare("UPDATE drivers SET status = ? WHERE id = ?");
+                $stmtDrv->execute([$drvStatus, $driver_id]);
+            }
+
             $db->commit();
             echo json_encode(['status' => true, 'message' => 'Transaksi pemesanan berhasil diperbarui!']);
         } catch (Exception $e) {
-            if (isset($db)) $db->rollBack();
+            if (isset($db) && $db->inTransaction()) $db->rollBack();
             echo json_encode(['status' => false, 'message' => $e->getMessage()]);
         }
     }
@@ -221,9 +259,21 @@ class AdminBookingController
 
             $booking = $this->bookingModel->findById((int)$id);
             if ($booking) {
-                // Kembalikan status mobil yang bersangkutan menjadi Tersedia
+                // Hapus berkas fisik jaminan jika ada
+                if (!empty($booking['guarantee_file'])) {
+                    $filePath = __DIR__ . '/../../admin/assets/uploads/bookings/' . $booking['guarantee_file'];
+                    if (file_exists($filePath) && is_file($filePath)) unlink($filePath);
+                }
+
+                // Kembalikan status mobil menjadi Tersedia
                 $stmtCar = $db->prepare("UPDATE cars SET status = 'Tersedia' WHERE id = ?");
                 $stmtCar->execute([$booking['car_id']]);
+
+                // Kembalikan status driver menjadi Tersedia
+                if ($booking['driver_id']) {
+                    $stmtDrv = $db->prepare("UPDATE drivers SET status = 'Tersedia' WHERE id = ?");
+                    $stmtDrv->execute([$booking['driver_id']]);
+                }
 
                 // Hapus data booking
                 $this->bookingModel->delete((int)$id);
@@ -232,12 +282,12 @@ class AdminBookingController
             $db->commit();
             echo json_encode(['status' => true, 'message' => 'Transaksi pemesanan berhasil dihapus!']);
         } catch (Exception $e) {
-            if (isset($db)) $db->rollBack();
+            if (isset($db) && $db->inTransaction()) $db->rollBack();
             echo json_encode(['status' => false, 'message' => $e->getMessage()]);
         }
     }
 
-    // Update Status Approval (Fungsi lama tetap dipertahankan)
+    // Update Status Approval / Alur Pemesanan
     public function update_status()
     {
         header('Content-Type: application/json; charset=utf-8');
@@ -246,7 +296,7 @@ class AdminBookingController
                 $db = Database::getConnection();
                 $db->beginTransaction();
 
-                $id = (int)($_POST['id'] ?? 0);
+                $id     = (int)($_POST['id'] ?? 0);
                 $status = $_POST['status'] ?? '';
 
                 $booking = $this->bookingModel->findById($id);
@@ -255,18 +305,27 @@ class AdminBookingController
                 $this->bookingModel->updateStatus($id, $status);
 
                 $carId = $booking['car_id'];
+                $driverId = $booking['driver_id'];
+
                 $carStatus = 'Tersedia';
                 if ($status === 'Approve') $carStatus = 'Reservasi';
                 if ($status === 'Dipinjam') $carStatus = 'Disewa';
-                if ($status === 'Selesai' || $status === 'Reject' || $status === 'Dikembalikan') $carStatus = 'Tersedia';
+                if (in_array($status, ['Selesai', 'Reject', 'Dikembalikan'])) $carStatus = 'Tersedia';
 
                 $stmt = $db->prepare("UPDATE cars SET status = ? WHERE id = ?");
                 $stmt->execute([$carStatus, $carId]);
 
+                // Update Driver Status
+                if ($driverId) {
+                    $drvStatus = in_array($status, ['Selesai', 'Reject', 'Dikembalikan']) ? 'Tersedia' : 'Disewa';
+                    $stmtDrv = $db->prepare("UPDATE drivers SET status = ? WHERE id = ?");
+                    $stmtDrv->execute([$drvStatus, $driverId]);
+                }
+
                 $db->commit();
                 echo json_encode(['status' => true, 'message' => 'Status pemesanan berhasil diperbarui menjadi ' . $status]);
             } catch (Exception $e) {
-                if (isset($db)) $db->rollBack();
+                if (isset($db) && $db->inTransaction()) $db->rollBack();
                 echo json_encode(['status' => false, 'message' => $e->getMessage()]);
             }
         }
@@ -281,9 +340,41 @@ class AdminBookingController
             die("Data pesanan tidak ditemukan.");
         }
 
-        // Hitung subtotal dan pajak (opsional, jika Anda ingin menampilkan pajak)
-        // Kita asumsikan total_price adalah harga final (sudah termasuk semuanya)
-
         require_once __DIR__ . '/../../admin/booking/invoice.php';
+    }
+
+    /**
+     * Helper Privat untuk Pengunggahan Berkas Foto/Dokumen Jaminan (Max 2MB)
+     */
+    private function handleGuaranteeUpload(?string $existingFile = null): ?string
+    {
+        if (isset($_FILES['guarantee_file']) && $_FILES['guarantee_file']['error'] === 0) {
+            $uploadDir = __DIR__ . '/../../admin/assets/uploads/bookings/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+
+            // Batas Maksimal 2 MB (2,000,000 Byte)
+            if ($_FILES['guarantee_file']['size'] > 2000000) {
+                throw new Exception("Ukuran berkas jaminan terlalu besar! Maksimal 2 MB.");
+            }
+
+            $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
+            $fileExt = strtolower(pathinfo($_FILES['guarantee_file']['name'], PATHINFO_EXTENSION));
+
+            if (!in_array($fileExt, $allowedExtensions)) {
+                throw new Exception("Format berkas jaminan tidak didukung! Format yang diperbolehkan: JPG, PNG, WEBP, atau PDF.");
+            }
+
+            // Hapus berkas lama jika diganti
+            if (!empty($existingFile) && file_exists($uploadDir . $existingFile)) {
+                unlink($uploadDir . $existingFile);
+            }
+
+            $newFileName = 'guarantee_' . uniqid() . '_' . time() . '.' . $fileExt;
+            if (move_uploaded_file($_FILES['guarantee_file']['tmp_name'], $uploadDir . $newFileName)) {
+                return $newFileName;
+            }
+        }
+
+        return $existingFile;
     }
 }

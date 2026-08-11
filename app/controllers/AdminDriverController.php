@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/../models/DriverModel.php';
 
 class AdminDriverController {
@@ -23,7 +24,7 @@ class AdminDriverController {
                 if ($d['status'] === 'Nonaktif') $statusClass = 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-400';
                 
                 $d['status_html'] = "<span class=\"px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded-lg {$statusClass}\">" . htmlspecialchars($d['status']) . "</span>";
-                $d['price_format'] = "Rp " . number_format($d['price_per_day'], 0, ',', '.');
+                $d['price_format'] = "Rp " . number_format((float)($d['price_per_day'] ?? 0), 0, ',', '.');
                 $d['photo_url'] = !empty($d['photo']) ? base_url('admin/assets/uploads/drivers/' . htmlspecialchars($d['photo'])) : '';
             }
 
@@ -37,6 +38,7 @@ class AdminDriverController {
         header('Content-Type: application/json; charset=utf-8');
         $driver = $this->driverModel->findById((int)$id);
         if ($driver) {
+            $driver['photo_url'] = !empty($driver['photo']) ? base_url('admin/assets/uploads/drivers/' . htmlspecialchars($driver['photo'])) : '';
             echo json_encode(['status' => true, 'data' => $driver]);
         } else {
             echo json_encode(['status' => false, 'message' => 'Data sopir tidak ditemukan!']);
@@ -52,7 +54,9 @@ class AdminDriverController {
             $phone = htmlspecialchars($_POST['phone'] ?? '');
             $nik = htmlspecialchars($_POST['nik'] ?? '');
             $sim = htmlspecialchars($_POST['driver_license_number'] ?? '');
-            $price_per_day = (float)($_POST['price_per_day'] ?? 0);
+            
+            // Clean Input Rupiah
+            $price_per_day = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_day'] ?? '0');
             $status = $_POST['status'] ?? 'Tersedia';
 
             if ($this->driverModel->isNikExists($nik)) {
@@ -80,7 +84,9 @@ class AdminDriverController {
             $phone = htmlspecialchars($_POST['phone'] ?? '');
             $nik = htmlspecialchars($_POST['nik'] ?? '');
             $sim = htmlspecialchars($_POST['driver_license_number'] ?? '');
-            $price_per_day = (float)($_POST['price_per_day'] ?? 0);
+            
+            // Clean Input Rupiah
+            $price_per_day = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_day'] ?? '0');
             $status = $_POST['status'] ?? 'Tersedia';
 
             if ($this->driverModel->isNikExists($nik, (int)$id)) {
@@ -135,7 +141,7 @@ class AdminDriverController {
             if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
 
             $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
-            if (in_array($_FILES['photo']['type'], $allowedTypes) && $_FILES['photo']['size'] < 2000000) {
+            if (in_array($_FILES['photo']['type'], $allowedTypes) && $_FILES['photo']['size'] < 3000000) {
                 $fileExt = pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION);
                 $newFileName = uniqid('driver_') . '_' . time() . '.' . $fileExt;
                 if (move_uploaded_file($_FILES['photo']['tmp_name'], $uploadDir . $newFileName)) {

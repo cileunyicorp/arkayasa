@@ -10,8 +10,9 @@
                 </button>
             </div>
 
-            <form id="form-booking">
+            <form id="form-booking" enctype="multipart/form-data">
                 <input type="hidden" id="booking-id-form" name="id" value="">
+                <input type="hidden" id="total_days" name="total_days" value="1">
 
                 <div class="p-6 overflow-y-auto max-h-[70vh] space-y-4">
 
@@ -29,7 +30,7 @@
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Kendaraan <span class="text-rose-500">*</span></label>
-                            <select id="car_id" name="car_id" required onchange="updateCarPrice()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer">
+                            <select id="car_id" name="car_id" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer">
                                 <option value="">Pilih kendaraan</option>
                                 <?php foreach($cars as $car): ?>
                                     <option value="<?= $car['id'] ?>" data-price="<?= $car['price_per_day'] ?>">
@@ -40,10 +41,10 @@
                         </div>
                     </div>
 
-                    <!-- Baris 2: Opsi Layanan & Driver -->
+                    <!-- Baris 2: Layanan & Driver -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Layanan Layanan <span class="text-rose-500">*</span></label>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Layanan <span class="text-rose-500">*</span></label>
                             <div class="flex items-center gap-4 mt-2">
                                 <label class="inline-flex items-center cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300">
                                     <input type="radio" name="with_driver" value="0" checked onclick="toggleDriverOption(false)" class="form-radio text-primary focus:ring-primary">
@@ -58,7 +59,7 @@
 
                         <div id="driver-select-container" class="hidden">
                             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Pilih Driver <span class="text-rose-500">*</span></label>
-                            <select id="driver_id" name="driver_id" onchange="updateDriverFee()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer">
+                            <select id="driver_id" name="driver_id" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer">
                                 <option value="">Pilih driver</option>
                                 <?php foreach($drivers as $drv): ?>
                                     <option value="<?= $drv['id'] ?>" data-price="<?= $drv['price_per_day'] ?>">
@@ -73,12 +74,12 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Tanggal Ambil <span class="text-rose-500">*</span></label>
-                            <input type="datetime-local" id="start_date" name="start_date" required onchange="calculateBookingTotal()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 text-sm focus:outline-none">
+                            <input type="datetime-local" id="start_date" name="start_date" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 text-sm focus:outline-none">
                         </div>
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Tanggal Kembali <span class="text-rose-500">*</span></label>
-                            <input type="datetime-local" id="end_date" name="end_date" required onchange="calculateBookingTotal()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 text-sm focus:outline-none">
+                            <input type="datetime-local" id="end_date" name="end_date" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 text-sm focus:outline-none">
                         </div>
                     </div>
 
@@ -108,22 +109,30 @@
                         </div>
                     </div>
 
-                    <!-- Baris 6: Jaminan & Status -->
+                    <!-- Baris 6: Upload Foto/Dokumen Jaminan & Status -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Jaminan / Agunan <span class="text-slate-400 font-normal text-xs">(Opsional)</span></label>
-                            <input type="text" id="guarantee" name="guarantee" placeholder="Misal: KTP, Sepeda Motor + STNK" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 text-sm focus:outline-none">
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Foto/Dokumen Jaminan <span class="text-slate-400 font-normal text-xs">(Opsional, Max 2MB)</span></label>
+                            <div class="border border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-3 bg-white/30 dark:bg-slate-900/30 text-center">
+                                <input type="file" id="guarantee_file" name="guarantee_file" accept=".jpg,.jpeg,.png,.webp,.pdf" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-600/10 file:text-primary hover:file:bg-primary-600/20 cursor-pointer">
+                                <div id="preview-guarantee" class="mt-2 hidden">
+                                    <span class="text-[10px] text-slate-400 block mb-1">Dokumen Jaminan Tersimpan:</span>
+                                    <a id="link-preview-guarantee" href="" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">
+                                        <i class="fa-solid fa-file-lines"></i> <span>Lihat Berkas</span>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Status Booking</label>
                             <select id="status_form" name="status" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 text-sm focus:outline-none appearance-none cursor-pointer">
-                                <option value="Reservasi">Reservasi</option>
                                 <option value="Menunggu Pembayaran">Menunggu Pembayaran</option>
                                 <option value="Approve">Disetujui (Lunas)</option>
                                 <option value="Dipinjam">Dipinjam (Jalan)</option>
+                                <option value="Dikembalikan">Dikembalikan</option>
                                 <option value="Selesai">Selesai</option>
-                                <option value="Batal">Batal</option>
+                                <option value="Reject">Reject (Batal)</option>
                             </select>
                         </div>
                     </div>
@@ -168,85 +177,3 @@
         </div>
     </div>
 </div>
-
-<script>
-// Toggle Tampilan Driver
-function toggleDriverOption(isWithDriver) {
-    const driverContainer = document.getElementById('driver-select-container');
-    const driverSelect = document.getElementById('driver_id');
-    const driverFeeInput = document.getElementById('driver_fee');
-
-    if (isWithDriver) {
-        driverContainer.classList.remove('hidden');
-        driverSelect.setAttribute('required', 'required');
-        driverFeeInput.removeAttribute('readonly');
-        driverFeeInput.classList.remove('bg-slate-100', 'dark:bg-slate-800');
-    } else {
-        driverContainer.classList.add('hidden');
-        driverSelect.removeAttribute('required');
-        driverSelect.value = '';
-        driverFeeInput.value = '0';
-        driverFeeInput.setAttribute('readonly', 'readonly');
-        driverFeeInput.classList.add('bg-slate-100', 'dark:bg-slate-800');
-    }
-    calculateBookingTotal();
-}
-
-// Auto-fill Harga Mobil per Hari saat Mobil Dipilih
-function updateCarPrice() {
-    const carSelect = document.getElementById('car_id');
-    const selectedOption = carSelect.options[carSelect.selectedIndex];
-    const price = selectedOption ? selectedOption.getAttribute('data-price') : 0;
-    
-    document.getElementById('price_per_day').value = formatRupiahNumber(price || 0);
-    calculateBookingTotal();
-}
-
-// Auto-fill Fee Driver per Hari saat Driver Dipilih
-function updateDriverFee() {
-    const driverSelect = document.getElementById('driver_id');
-    const selectedOption = driverSelect.options[driverSelect.selectedIndex];
-    const price = selectedOption ? selectedOption.getAttribute('data-price') : 0;
-    
-    document.getElementById('driver_fee').value = formatRupiahNumber(price || 0);
-    calculateBookingTotal();
-}
-
-// Kalkulasi Total Biaya & Durasi
-function calculateBookingTotal() {
-    const startDateVal = document.getElementById('start_date').value;
-    const endDateVal = document.getElementById('end_date').value;
-
-    let days = 0;
-    if (startDateVal && endDateVal) {
-        const start = new Date(startDateVal);
-        const end = new Date(endDateVal);
-        const diffTime = end - start;
-        if (diffTime > 0) {
-            days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        }
-    }
-
-    const pricePerDay = parseFloat((document.getElementById('price_per_day').value || '0').replace(/[^0-9]/g, '')) || 0;
-    const driverFee = parseFloat((document.getElementById('driver_fee').value || '0').replace(/[^0-9]/g, '')) || 0;
-    const discount = parseFloat((document.getElementById('discount').value || '0').replace(/[^0-9]/g, '')) || 0;
-    const deposit = parseFloat((document.getElementById('deposit').value || '0').replace(/[^0-9]/g, '')) || 0;
-
-    const sewaTotal = days * pricePerDay;
-    const driverTotal = days * driverFee;
-    const total = (sewaTotal + driverTotal) - discount;
-    const sisa = Math.max(0, total - deposit);
-
-    document.getElementById('disp-durasi').innerText = `${days} hari`;
-    document.getElementById('disp-sewa').innerText = `Rp ${new Intl.NumberFormat('id-ID').format(sewaTotal)}`;
-    document.getElementById('disp-total').innerText = `Rp ${new Intl.NumberFormat('id-ID').format(total > 0 ? total : 0)}`;
-    document.getElementById('disp-sisa').innerText = `Rp ${new Intl.NumberFormat('id-ID').format(sisa)}`;
-}
-
-// Trigger Listener Kalkulasi pada Input Rupiah & Tanggal
-document.addEventListener('input', function(e) {
-    if (e.target.classList.contains('input-rupiah') || e.target.id === 'discount' || e.target.id === 'deposit' || e.target.id === 'price_per_day' || e.target.id === 'driver_fee') {
-        calculateBookingTotal();
-    }
-});
-</script>

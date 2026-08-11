@@ -46,9 +46,15 @@
                         <p class="text-xs text-slate-400">Unit Mobil & Nomor Plat</p>
                         <p id="det-car" class="text-sm font-bold text-slate-700 dark:text-slate-200"></p>
                     </div>
+
+                    <!-- Informasi Driver jika dipilih -->
+                    <div id="wrapper-det-driver" class="hidden">
+                        <p class="text-xs text-slate-400">Layanan Driver</p>
+                        <p id="det-driver" class="text-sm font-bold text-slate-700 dark:text-slate-200"></p>
+                    </div>
                 </div>
 
-                <!-- Data Durasi Sewa, Pembayaran, dan Tombol Aksi -->
+                <!-- Data Durasi Sewa, Jaminan, Pembayaran, dan Tombol Aksi -->
                 <div class="space-y-4">
                     <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-1">Rincian Sewa</h4>
                     <div class="grid grid-cols-2 gap-3">
@@ -71,14 +77,22 @@
                             <p id="det-price" class="text-sm font-extrabold text-emerald-600 dark:text-emerald-400"></p>
                         </div>
                     </div>
+
+                    <!-- Dokumen / Foto Jaminan -->
+                    <div>
+                        <p class="text-xs text-slate-400 mb-1">Berkas / Foto Jaminan</p>
+                        <div id="det-guarantee-container" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+                            <span id="det-guarantee-none" class="text-xs text-slate-400 italic hidden">Tidak ada berkas jaminan yang diunggah.</span>
+                            <a id="det-guarantee-link" href="" target="_blank" class="inline-flex items-center gap-2 text-xs font-bold text-primary hover:underline hidden">
+                                <i class="fa-solid fa-file-shield text-sm"></i>
+                                <span>Buka / Unduh Berkas Jaminan</span>
+                            </a>
+                        </div>
+                    </div>
+
                     <div>
                         <p class="text-xs text-slate-400">Catatan Pelanggan</p>
                         <p id="det-notes" class="text-sm font-medium text-slate-600 dark:text-slate-400 italic"></p>
-                    </div>
-                    
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-1 pt-2">Bukti Pembayaran</h4>
-                    <div class="w-full h-32 rounded-xl bg-slate-100 dark:bg-slate-800 border flex items-center justify-center text-slate-400 text-xs italic">
-                        <span>Bukti transfer belum diupload pelanggan</span>
                     </div>
                 </div>
             </div>
