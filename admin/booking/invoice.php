@@ -92,7 +92,6 @@
                     <p class="text-xl font-black text-emerald-600 uppercase">LUNAS</p>
                 <?php else: ?>
                     <p class="text-xl font-black text-rose-600 uppercase">BELUM LUNAS</p>
-                    <p class="text-xs font-bold text-rose-600 mt-1">Sisa Tagihan: Rp <?= number_format($sisaBayar, 0, ',', '.') ?></p>
                 <?php endif; ?>
                 <p class="text-xs text-gray-500 mt-2 font-medium">Status Sewa: <span class="font-bold text-gray-700"><?= htmlspecialchars($booking['status'] ?? '-') ?></span></p>
             </div>
