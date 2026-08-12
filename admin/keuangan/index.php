@@ -12,7 +12,7 @@ require_once __DIR__ . '/../includes/navbar.php';
             <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Catatan Keuangan</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">Pantau arus kas, pendapatan sewa, dan pengeluaran operasional.</p>
         </div>
-        <button onclick="openModalFinance('add')" class="px-5 py-2.5 bg-primary-600 hover:hover:bg-primary-700 text-white rounded-xl shadow-lg shadow-primary-600/30 transition-all font-medium flex items-center gap-2">
+        <button onclick="openModalFinance('add')" class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl shadow-lg shadow-primary-600/30 transition-all font-medium flex items-center gap-2">
             <i class="fa-solid fa-plus"></i> <span>Input Transaksi</span>
         </button>
     </div>
@@ -22,21 +22,21 @@ require_once __DIR__ . '/../includes/navbar.php';
         <div class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-md rounded-2xl border border-emerald-200/50 dark:border-emerald-800/50 p-6 flex items-center justify-between shadow-sm">
             <div>
                 <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total Pemasukan</p>
-                <h3 class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">Rp <?= number_format($summary['income'], 0, ',', '.') ?></h3>
+                <h3 class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">Rp <?= number_format($summary['income'] ?? 0, 0, ',', '.') ?></h3>
             </div>
             <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-arrow-trend-up"></i></div>
         </div>
         <div class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-md rounded-2xl border border-rose-200/50 dark:border-rose-800/50 p-6 flex items-center justify-between shadow-sm">
             <div>
                 <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total Pengeluaran</p>
-                <h3 class="text-2xl font-extrabold text-rose-600 dark:text-rose-400">Rp <?= number_format($summary['expense'], 0, ',', '.') ?></h3>
+                <h3 class="text-2xl font-extrabold text-rose-600 dark:text-rose-400">Rp <?= number_format($summary['expense'] ?? 0, 0, ',', '.') ?></h3>
             </div>
             <div class="w-12 h-12 bg-rose-100 dark:bg-rose-900/30 text-rose-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-arrow-trend-down"></i></div>
         </div>
         <div class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-md rounded-2xl border border-indigo-200/50 dark:border-indigo-800/50 p-6 flex items-center justify-between shadow-sm">
             <div>
                 <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Saldo Kas Tersedia</p>
-                <h3 class="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">Rp <?= number_format($summary['balance'], 0, ',', '.') ?></h3>
+                <h3 class="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">Rp <?= number_format($summary['balance'] ?? 0, 0, ',', '.') ?></h3>
             </div>
             <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-wallet"></i></div>
         </div>
@@ -50,6 +50,31 @@ require_once __DIR__ . '/../includes/navbar.php';
 
 <script>
     let tableFinance;
+
+    // Format Nominal ke Rupiah secara Real-time
+    function formatRupiahNumber(val) {
+        if (val === null || val === undefined || val === '') return '';
+        let valStr = val.toString().trim();
+        if (valStr.includes('.') && !valStr.includes(',')) {
+            let parts = valStr.split('.');
+            if (parts.length === 2 && parts[1].length <= 2) valStr = parts[0];
+        }
+        let cleanVal = valStr.replace(/[^0-9]/g, '');
+        return cleanVal ? new Intl.NumberFormat('id-ID').format(cleanVal) : '';
+    }
+
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('input-rupiah')) {
+            let cursorPosition = e.target.selectionStart;
+            let originalLength = e.target.value.length;
+
+            e.target.value = formatRupiahNumber(e.target.value);
+
+            let newLength = e.target.value.length;
+            cursorPosition = cursorPosition + (newLength - originalLength);
+            e.target.setSelectionRange(cursorPosition, cursorPosition);
+        }
+    });
 
     document.addEventListener('DOMContentLoaded', function() {
         loadTableFinance();
@@ -75,7 +100,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                         timer: 1500,
                         showConfirmButton: false
                     }).then(() => {
-                        window.location.reload(); // Reload untuk memperbarui 3 Kartu Saldo
+                        window.location.reload();
                     });
                 } else {
                     Swal.fire({
@@ -100,7 +125,8 @@ require_once __DIR__ . '/../includes/navbar.php';
                 url: '<?= base_url('admin/keuangan/api/get_all') ?>',
                 dataSrc: 'data'
             },
-            columns: [{
+            columns: [
+                {
                     data: 'date_format',
                     render: data => `<span class="font-semibold text-slate-700 dark:text-slate-300">${data}</span>`
                 },
@@ -131,27 +157,21 @@ require_once __DIR__ . '/../includes/navbar.php';
                     </div>`
                 }
             ],
-            order: [
-                [0, 'desc']
-            ], // Urutkan dari tanggal terbaru
+            order: [[0, 'desc']],
             language: {
                 lengthMenu: "Tampilkan _MENU_ data",
                 search: "Cari:",
-
                 info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
                 infoEmpty: "Tidak ada data",
                 infoFiltered: "(difilter dari _MAX_ data)",
-
                 zeroRecords: "Belum ada transaksi keuangan",
-                emptyTable: "Belum ada data armada",
-
+                emptyTable: "Belum ada data keuangan",
                 paginate: {
                     first: "«",
                     last: "»",
                     next: "›",
                     previous: "‹"
                 },
-
                 processing: "Memuat data..."
             }
         });
@@ -182,8 +202,8 @@ require_once __DIR__ . '/../includes/navbar.php';
             document.getElementById('transaction_date').value = data.transaction_date;
             document.getElementById('type').value = data.type;
             document.getElementById('category').value = data.category;
-            document.getElementById('amount').value = data.amount;
-            document.getElementById('description').value = data.description;
+            document.getElementById('amount').value = formatRupiahNumber(data.amount);
+            document.getElementById('description').value = data.description || '';
 
             document.getElementById('modal-finance').classList.remove('hidden');
         }

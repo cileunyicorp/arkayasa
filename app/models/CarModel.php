@@ -34,4 +34,23 @@ class CarModel extends BaseModel
         $stmt->execute([$car_id]);
         return $stmt->fetchAll();
     }
+
+    /**
+     * Hitung ringkasan status mobil (Tersedia, Disewa, Maintenance)
+     */
+    public function getStatusSummary(): array
+    {
+        $stmt = $this->db->query("SELECT 
+            SUM(CASE WHEN status = 'Tersedia' THEN 1 ELSE 0 END) as available,
+            SUM(CASE WHEN status IN ('Disewa', 'Reservasi') THEN 1 ELSE 0 END) as rented,
+            SUM(CASE WHEN status = 'Maintenance' THEN 1 ELSE 0 END) as maintenance
+            FROM {$this->table}");
+
+        $row = $stmt->fetch();
+        return [
+            'available'   => (int)($row['available'] ?? 0),
+            'rented'      => (int)($row['rented'] ?? 0),
+            'maintenance' => (int)($row['maintenance'] ?? 0)
+        ];
+    }
 }

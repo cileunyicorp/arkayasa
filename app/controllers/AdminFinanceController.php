@@ -47,22 +47,22 @@ class AdminFinanceController {
         }
     }
 
-    public function store() {
+        public function store() {
         header('Content-Type: application/json; charset=utf-8');
         try {
             $db = Database::getConnection();
             
             $transaction_date = $_POST['transaction_date'] ?? date('Y-m-d');
-            $type = $_POST['type'] ?? 'Pemasukan';
+            $type = $_POST['type'] ?? 'Masuk';
             $category = htmlspecialchars($_POST['category'] ?? '');
-            $amount = (float)($_POST['amount'] ?? 0);
+            $amount = (float)preg_replace('/[^0-9]/', '', $_POST['amount'] ?? '0');
             $description = htmlspecialchars($_POST['description'] ?? '');
 
             $sql = "INSERT INTO finances (transaction_date, type, category, amount, description) VALUES (?, ?, ?, ?, ?)";
             $stmt = $db->prepare($sql);
             $stmt->execute([$transaction_date, $type, $category, $amount, $description]);
 
-            echo json_encode(['status' => true, 'message' => 'Transaksi keuangan berhasil dicatat!']);
+            echo json_encode(['status' => true, 'message' => 'Catatan keuangan berhasil ditambahkan!']);
         } catch (Exception $e) {
             echo json_encode(['status' => false, 'message' => 'Gagal: ' . $e->getMessage()]);
         }
@@ -74,20 +74,21 @@ class AdminFinanceController {
             $db = Database::getConnection();
             
             $transaction_date = $_POST['transaction_date'] ?? date('Y-m-d');
-            $type = $_POST['type'] ?? 'Pemasukan';
+            $type = $_POST['type'] ?? 'Masuk';
             $category = htmlspecialchars($_POST['category'] ?? '');
-            $amount = (float)($_POST['amount'] ?? 0);
+            $amount = (float)preg_replace('/[^0-9]/', '', $_POST['amount'] ?? '0');
             $description = htmlspecialchars($_POST['description'] ?? '');
 
             $sql = "UPDATE finances SET transaction_date=?, type=?, category=?, amount=?, description=? WHERE id=?";
             $stmt = $db->prepare($sql);
             $stmt->execute([$transaction_date, $type, $category, $amount, $description, $id]);
 
-            echo json_encode(['status' => true, 'message' => 'Data keuangan diperbarui!']);
+            echo json_encode(['status' => true, 'message' => 'Data keuangan berhasil diperbarui!']);
         } catch (Exception $e) {
             echo json_encode(['status' => false, 'message' => 'Gagal: ' . $e->getMessage()]);
         }
     }
+
 
     public function delete($id) {
         header('Content-Type: application/json; charset=utf-8');
