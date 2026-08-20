@@ -2,21 +2,29 @@
 
 require_once __DIR__ . '/../models/CarModel.php';
 require_once __DIR__ . '/../models/CategoryModel.php';
+require_once __DIR__ . '/../models/PartnerModel.php';
+require_once __DIR__ . '/../models/BrandModel.php';
 
 class AdminCarController
 {
     private CarModel $carModel;
     private CategoryModel $categoryModel;
+    private PartnerModel $partnerModel;
+    private BrandModel $brandModel;
 
     public function __construct()
     {
-        $this->carModel = new CarModel();
+        $this->carModel      = new CarModel();
         $this->categoryModel = new CategoryModel();
+        $this->partnerModel  = new PartnerModel();
+        $this->brandModel    = new BrandModel();
     }
 
     public function index()
     {
         $categories = $this->categoryModel->findAll();
+        $partners   = $this->partnerModel->getActivePartners();
+        $brands     = $this->brandModel->getActiveBrands();
         require_once __DIR__ . '/../../admin/mobil/index.php';
     }
 
@@ -28,6 +36,14 @@ class AdminCarController
             $cars = $this->carModel->getAllWithDetails();
 
             foreach ($cars as &$car) {
+                // Badge Kepemilikan
+                $ownClass = 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300';
+                if ($car['ownership_type'] === 'Investor') $ownClass = 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300';
+                if ($car['ownership_type'] === 'Rent to Rent') $ownClass = 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300';
+
+                $partnerText = !empty($car['partner_name']) ? "<br><span class='text-[10px] text-slate-400'>Mitra: {$car['partner_name']}</span>" : '';
+                $car['ownership_html'] = "<span class=\"px-2 py-0.5 text-[10px] font-bold rounded-md {$ownClass}\">" . htmlspecialchars($car['ownership_type']) . "</span>{$partnerText}";
+
                 // Pewarnaan Badge Status
                 $statusClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300';
                 if ($car['status'] === 'Reservasi') $statusClass = 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300';
@@ -73,28 +89,30 @@ class AdminCarController
             $db = Database::getConnection();
             $db->beginTransaction();
 
-            $name = htmlspecialchars($_POST['name'] ?? '');
-            $brand = htmlspecialchars($_POST['brand'] ?? '');
-            $plate_number = htmlspecialchars($_POST['plate_number'] ?? '');
-            $category_id = (int)($_POST['category_id'] ?? 0);
+            $name           = htmlspecialchars($_POST['name'] ?? '');
+            $brand          = htmlspecialchars($_POST['brand'] ?? '');
+            $plate_number   = htmlspecialchars($_POST['plate_number'] ?? '');
+            $category_id    = (int)($_POST['category_id'] ?? 0);
+            $ownership_type = $_POST['ownership_type'] ?? 'Arkayasa';
+            $partner_id     = (!empty($_POST['partner_id']) && (int)$_POST['partner_id'] > 0) ? (int)$_POST['partner_id'] : null;
 
             // Harga Harian
-            $price_per_day = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_day'] ?? '0');
+            $price_per_day  = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_day'] ?? '0');
 
-            $year = (int)($_POST['year'] ?? date('Y'));
-            $capacity = (int)($_POST['capacity'] ?? 4);
+            $year         = (int)($_POST['year'] ?? date('Y'));
+            $capacity     = (int)($_POST['capacity'] ?? 4);
             $transmission = $_POST['transmission'] ?? 'Manual';
-            $fuel_type = $_POST['fuel_type'] ?? 'Bensin';
-            $status = $_POST['status'] ?? 'Tersedia';
-            $description = htmlspecialchars($_POST['description'] ?? '');
-            $features = htmlspecialchars($_POST['features'] ?? '');
+            $fuel_type    = $_POST['fuel_type'] ?? 'Bensin';
+            $status       = $_POST['status'] ?? 'Tersedia';
+            $description  = htmlspecialchars($_POST['description'] ?? '');
+            $features     = htmlspecialchars($_POST['features'] ?? '');
 
             $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $name))) . '-' . time();
 
-            $sql = "INSERT INTO cars (category_id, name, brand, plate_number, slug, price_per_day, year, capacity, transmission, fuel_type, status, description, features) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO cars (category_id, name, brand, plate_number, slug, price_per_day, year, capacity, transmission, fuel_type, status, ownership_type, partner_id, description, features) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $db->prepare($sql);
-            $stmt->execute([$category_id, $name, $brand, $plate_number, $slug, $price_per_day, $year, $capacity, $transmission, $fuel_type, $status, $description, $features]);
+            $stmt->execute([$category_id, $name, $brand, $plate_number, $slug, $price_per_day, $year, $capacity, $transmission, $fuel_type, $status, $ownership_type, $partner_id, $description, $features]);
 
             $car_id = $db->lastInsertId();
             $this->handleUploads($car_id, $db);
@@ -113,25 +131,27 @@ class AdminCarController
         try {
             $db = Database::getConnection();
 
-            $name = htmlspecialchars($_POST['name'] ?? '');
-            $brand = htmlspecialchars($_POST['brand'] ?? '');
-            $plate_number = htmlspecialchars($_POST['plate_number'] ?? '');
-            $category_id = (int)($_POST['category_id'] ?? 0);
+            $name           = htmlspecialchars($_POST['name'] ?? '');
+            $brand          = htmlspecialchars($_POST['brand'] ?? '');
+            $plate_number   = htmlspecialchars($_POST['plate_number'] ?? '');
+            $category_id    = (int)($_POST['category_id'] ?? 0);
+            $ownership_type = $_POST['ownership_type'] ?? 'Arkayasa';
+            $partner_id     = (!empty($_POST['partner_id']) && (int)$_POST['partner_id'] > 0) ? (int)$_POST['partner_id'] : null;
 
             // Harga Harian
-            $price_per_day = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_day'] ?? '0');
+            $price_per_day  = (float)preg_replace('/[^0-9]/', '', $_POST['price_per_day'] ?? '0');
 
-            $year = (int)($_POST['year'] ?? date('Y'));
-            $capacity = (int)($_POST['capacity'] ?? 4);
+            $year         = (int)($_POST['year'] ?? date('Y'));
+            $capacity     = (int)($_POST['capacity'] ?? 4);
             $transmission = $_POST['transmission'] ?? 'Manual';
-            $fuel_type = $_POST['fuel_type'] ?? 'Bensin';
-            $status = $_POST['status'] ?? 'Tersedia';
-            $description = htmlspecialchars($_POST['description'] ?? '');
-            $features = htmlspecialchars($_POST['features'] ?? '');
+            $fuel_type    = $_POST['fuel_type'] ?? 'Bensin';
+            $status       = $_POST['status'] ?? 'Tersedia';
+            $description  = htmlspecialchars($_POST['description'] ?? '');
+            $features     = htmlspecialchars($_POST['features'] ?? '');
 
-            $sql = "UPDATE cars SET category_id=?, name=?, brand=?, plate_number=?, price_per_day=?, year=?, capacity=?, transmission=?, fuel_type=?, status=?, description=?, features=? WHERE id=?";
+            $sql = "UPDATE cars SET category_id=?, name=?, brand=?, plate_number=?, price_per_day=?, year=?, capacity=?, transmission=?, fuel_type=?, status=?, ownership_type=?, partner_id=?, description=?, features=? WHERE id=?";
             $stmt = $db->prepare($sql);
-            $stmt->execute([$category_id, $name, $brand, $plate_number, $price_per_day, $year, $capacity, $transmission, $fuel_type, $status, $description, $features, $id]);
+            $stmt->execute([$category_id, $name, $brand, $plate_number, $price_per_day, $year, $capacity, $transmission, $fuel_type, $status, $ownership_type, $partner_id, $description, $features, $id]);
 
             if (isset($_FILES['images']) && count($_FILES['images']['name']) > 0 && $_FILES['images']['error'][0] != 4) {
                 $this->handleUploads($id, $db);

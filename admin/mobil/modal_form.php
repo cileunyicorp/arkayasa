@@ -25,10 +25,26 @@
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nama Mobil <span class="text-rose-500">*</span></label>
                                 <input type="text" id="name" name="name" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50">
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Brand Mobil <span class="text-rose-500">*</span></label>
-                                <input type="text" id="brand" name="brand" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="relative">
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Brand Mobil <span class="text-rose-500">*</span></label>
+                                    <input type="text" id="brand" name="brand" required placeholder="Ketik atau pilih brand..." autocomplete="off" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50">
+
+                                    <!-- Wadah Autocomplete Suggestions -->
+                                    <div id="brand-autocomplete-list" class="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl hidden">
+                                        <!-- Daftar saran akan dipopulasi via JavaScript -->
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kepemilikan <span class="text-rose-500">*</span></label>
+                                    <select id="ownership_type" name="ownership_type" required onchange="togglePartnerSelect()" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none">
+                                        <option value="Arkayasa">Aset Arkayasa</option>
+                                        <option value="Investor">Militer/Investor</option>
+                                        <option value="Rent to Rent">Rent to Rent</option>
+                                    </select>
+                                </div>
                             </div>
+
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Harian <span class="text-rose-500">*</span></label>
@@ -43,6 +59,14 @@
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
+                            </div>
+                            <div id="partner-select-container" class="hidden relative">
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pilih Partner/Mitra</label>
+                                <input type="text" id="partner_name_input" placeholder="Ketik nama mitra..." autocomplete="off" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                <input type="hidden" id="partner_id" name="partner_id" value="">
+
+                                <!-- Autocomplete Suggestions Partner -->
+                                <div id="partner-autocomplete-list" class="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl hidden"></div>
                             </div>
                         </div>
 

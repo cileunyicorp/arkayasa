@@ -8,6 +8,7 @@ $isDriver = (strpos($currentUrl, 'admin/driver') === 0);
 $isPelanggan = (strpos($currentUrl, 'admin/pelanggan') === 0);
 $isPerawatan = (strpos($currentUrl, 'admin/perawatan') === 0);
 $isKeuangan = (strpos($currentUrl, 'admin/keuangan') === 0);
+$isPartner = (strpos($currentUrl, 'admin/partner') === 0);
 ?>
 <!-- Sidebar -->
 <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-950 text-white border-r border-slate-900 transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col justify-between">
@@ -43,6 +44,11 @@ $isKeuangan = (strpos($currentUrl, 'admin/keuangan') === 0);
                 <span class="mx-3 text-sm">Dashboard</span>
             </a>
 
+            <a href="<?= base_url('admin/partner') ?>" class="flex items-center px-4 py-3 rounded-xl font-medium transition duration-200 <?= $isPartner ? 'bg-primary-600 text-white' : 'text-slate-400 hover:bg-slate-900/50 hover:text-white group' ?>">
+                <i class="fa-solid fa-handshake w-5 text-lg <?= $isPartner ? '' : 'group-hover:text-primary-600 transition' ?>"></i>
+                <span class="mx-3 text-sm">Rent Partner</span>
+            </a>
+
             <a href="<?= base_url('admin/mobil') ?>" class="flex items-center px-4 py-3 rounded-xl font-medium transition duration-200 <?= $isMobil ? 'bg-primary-600 text-white' : 'text-slate-400 hover:bg-slate-900/50 hover:text-white group' ?>">
                 <i class="fa-solid fa-car w-5 text-lg <?= $isMobil ? '' : 'group-hover:text-primary-600 transition' ?>"></i>
                 <span class="mx-3 text-sm">Data Mobil</span>
@@ -53,17 +59,17 @@ $isKeuangan = (strpos($currentUrl, 'admin/keuangan') === 0);
                 <span class="mx-3 text-sm">Pelanggan</span>
             </a>
 
-            
+
             <a href="<?= base_url('admin/driver') ?>" class="flex items-center px-4 py-3 <?= $isDriver ? 'bg-primary-600 text-white' : 'text-slate-400 hover:bg-slate-900/50 hover:text-white' ?> rounded-xl font-medium transition duration-200 group">
                 <i class="fa-solid fa-user-tie w-5 text-lg <?= $isDriver ? '' : 'group-hover:text-primary-600 transition' ?>"></i>
                 <span class="mx-3 text-sm">Sopir</span>
             </a>
-            
+
             <a href="<?= base_url('admin/booking') ?>" class="flex items-center px-4 py-3 rounded-xl font-medium transition duration-200 <?= $isBooking ? 'bg-primary-600 text-white' : 'text-slate-400 hover:bg-slate-900/50 hover:text-white group' ?>">
                 <i class="fa-solid fa-calendar-days w-5 text-lg <?= $isBooking ? '' : 'group-hover:text-primary-600 transition' ?>"></i>
                 <span class="mx-3 text-sm">Data Booking</span>
             </a>
-            
+
             <a href="<?= base_url('admin/perawatan') ?>" class="flex items-center px-4 py-3 rounded-xl font-medium transition duration-200 <?= $isPerawatan ? 'bg-primary-600 text-white' : 'text-slate-400 hover:bg-slate-900/50 hover:text-white group' ?>">
                 <i class="fa-solid fa-screwdriver-wrench w-5 text-lg <?= $isPerawatan ? '' : 'group-hover:text-primary-600 transition' ?>"></i>
                 <span class="mx-3 text-sm">Perawatan Mobil</span>

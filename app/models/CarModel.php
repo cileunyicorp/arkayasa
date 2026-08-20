@@ -16,11 +16,11 @@ class CarModel extends BaseModel
     // --- TAMBAHKAN METHOD INI ---
     public function getAllWithDetails(): array
     {
-        // Menggunakan LEFT JOIN untuk kategori dan Sub-Query untuk mengambil 1 gambar utama
-        $sql = "SELECT c.*, cat.name as category_name, 
-                       (SELECT image_path FROM car_images WHERE car_id = c.id AND is_primary = 1 LIMIT 1) as primary_image
+        $sql = "SELECT c.*, cat.name as category_name, ptr.name as partner_name, ptr.company_name as partner_company,
+                       (SELECT image_path FROM car_images WHERE car_id = c.id ORDER BY is_primary DESC, id ASC LIMIT 1) as primary_image
                 FROM {$this->table} c
                 LEFT JOIN categories cat ON c.category_id = cat.id
+                LEFT JOIN rent_partners ptr ON c.partner_id = ptr.id
                 ORDER BY c.id DESC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();

@@ -61,6 +61,15 @@ $routes = [
     'admin/keuangan/update'        => ['AdminFinanceController', 'update'],
     'admin/keuangan/delete'        => ['AdminFinanceController', 'delete'],
 
+    // --- MODUL RENT PARTNER (MITRA) ---
+    'admin/partner'               => ['AdminPartnerController', 'index'],
+    'admin/partner/api/get_all'   => ['AdminPartnerController', 'get_all'],
+    'admin/partner/api/get_by_id' => ['AdminPartnerController', 'get_by_id'],
+    'admin/partner/store'         => ['AdminPartnerController', 'store'],
+    'admin/partner/update'        => ['AdminPartnerController', 'update'],
+    'admin/partner/delete'        => ['AdminPartnerController', 'delete'],
+
+
 ];
 
 return $routes;

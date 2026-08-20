@@ -111,6 +111,9 @@ require_once __DIR__ . '/../includes/navbar.php';
                     render: data => `<span class="font-mono font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">${data}</span>`
                 },
                 {
+                    data: 'ownership_html'
+                },
+                {
                     data: null,
                     render: row => `<span class="font-semibold text-slate-700 dark:text-slate-200">${formatRupiah(row.price_per_day)}</span>`
                 },
@@ -223,8 +226,6 @@ require_once __DIR__ . '/../includes/navbar.php';
         }
     });
 
-    // Update Fungsi editCar()
-    // Update Fungsi editCar() dengan Konversi Math.round untuk Keamanan Ekstra
     async function editCar(id) {
         const res = await fetch(`<?= base_url('admin/mobil/api/get_by_id/') ?>${id}`);
         const result = await res.json();
@@ -238,12 +239,24 @@ require_once __DIR__ . '/../includes/navbar.php';
             document.getElementById('brand').value = data.brand;
             document.getElementById('category_id').value = data.category_id;
 
+            // Set Kepemilikan & Autocomplete Partner
+            document.getElementById('ownership_type').value = data.ownership_type || 'Arkayasa';
+            togglePartnerSelect();
+            if (document.getElementById('partner_id')) {
+                document.getElementById('partner_id').value = data.partner_id || '';
+            }
+            if (document.getElementById('partner_name_input')) {
+                // Cari nama partner berdasarkan partner_id dari data global
+                const partnerObj = (window.availablePartners || []).find(p => p.id == data.partner_id);
+                document.getElementById('partner_name_input').value = partnerObj ? partnerObj.name : (data.partner_name || '');
+            }
+
             // Konversi nilai desimal DB ke integer murni sebelum diformat
             document.getElementById('price_per_day').value = formatRupiahNumber(Math.round(parseFloat(data.price_per_day || 0)));
 
             document.getElementById('plate_number').value = data.plate_number;
 
-            // Set nilai tahun dan sesuaikan posisi rol tahun sesuai data mobil
+            // Set nilai tahun dan sesuaikan posisi rol tahun (year-roller) sesuai data mobil
             document.getElementById('year').value = data.year;
             requestAnimationFrame(() => {
                 const roller = document.getElementById('year-roller');
@@ -262,12 +275,14 @@ require_once __DIR__ . '/../includes/navbar.php';
             document.getElementById('features').value = data.features;
             document.getElementById('description').value = data.description;
 
+            // Penanganan Upload Gambar Opsional saat Edit
             document.getElementById('input-images').removeAttribute('required');
             document.getElementById('img-hint-edit').classList.remove('hidden');
 
             document.getElementById('modal-car').classList.remove('hidden');
         }
     }
+
 
     // Hapus via Fetch API
     function deleteCar(id) {
@@ -310,4 +325,16 @@ require_once __DIR__ . '/../includes/navbar.php';
     }
 </script>
 
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+<script>
+    window.availableBrands = <?= json_encode(array_column($brands ?? [], 'name')) ?>;
+    window.availablePartners = <?= json_encode(array_values(array_map(function ($p) {
+                                    return [
+                                        'id' => $p['id'],
+                                        'name' => $p['name'],
+                                        'company' => $p['company_name'] ?? ''
+                                    ];
+                                }, array_filter($partners ?? [], function ($p) {
+                                    return ($p['status'] ?? 'Aktif') === 'Aktif';
+                                })))) ?>;
+</script>
+<script src="<?= base_url('assets/js/car-modal.js') ?>"></script>
