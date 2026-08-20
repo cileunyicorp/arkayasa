@@ -1,7 +1,7 @@
 # Dependensi
 /node_modules/
 /vendor/
-
+/admin/assets/uploads/cars/
 # Environment & Konfigurasi Sensitif
 .env
 
